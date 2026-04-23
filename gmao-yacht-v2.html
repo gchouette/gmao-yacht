@@ -1955,7 +1955,7 @@ function render(){
 
   // Login screen
   if(!state.currentUser){
-    const loginScreen=S('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'linear-gradient(135deg, #2563eb 0%, #1e40af 100%)',padding:'20px',boxSizing:'border-box'}});
+    const loginScreen=S('div',{style:{display:'flex',alignItems:'flex-start',justifyContent:'center',minHeight:'100vh',background:'linear-gradient(135deg, #2563eb 0%, #1e40af 100%)',padding:'40px 20px',boxSizing:'border-box',overflowY:'auto'}});
     const loginCard=S('div',{style:{background:'#fff',borderRadius:'16px',padding:'48px',maxWidth:'600px',width:'100%',boxShadow:'0 20px 60px rgba(0,0,0,.3)',textAlign:'center'}});
     loginCard.appendChild(S('div',{style:{fontSize:'48px',marginBottom:'16px'}},'⚓'));
     loginCard.appendChild(S('h1',{style:{fontSize:'28px',fontWeight:700,color:'#1e293b',marginBottom:'8px'}},'GMAO Yacht Fleet'));
