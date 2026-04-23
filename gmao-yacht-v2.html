@@ -1,0 +1,2160 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<meta name="theme-color" content="#2563eb"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="GMAO Yacht"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
+<title>GMAO Yacht Pro — Gestion de flotte</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f8fafc;color:#1e293b}
+.app{display:flex;height:100vh}
+.sidebar{width:220px;background:#fff;border-right:1px solid #e2e8f0;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.sidebar.collapsed{width:56px}
+.sidebar-header{padding:14px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:10px}
+.sidebar-logo{background:#2563eb;color:#fff;padding:7px;border-radius:10px;display:flex;flex-shrink:0}
+.sidebar-brand h2{font-size:12px;font-weight:700}.sidebar-brand p{font-size:10px;color:#94a3b8}
+.sidebar nav{flex:1;padding:6px;display:flex;flex-direction:column;gap:1px}
+.nav-btn{width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:none;background:transparent;color:#64748b;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;text-align:left;white-space:nowrap;overflow:hidden}
+.nav-btn:hover{background:#f1f5f9;color:#334155}
+.nav-btn.active{background:#eff6ff;color:#2563eb}
+.nav-btn .dot{margin-left:auto;background:#ef4444;color:#fff;font-size:9px;border-radius:99px;min-width:18px;height:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sidebar-footer{padding:6px;border-top:1px solid #f1f5f9}
+.cloud-badge{font-size:11px;padding:4px 8px;border-radius:6px;text-align:center;margin-bottom:4px;cursor:pointer}
+.cloud-badge.off{background:#fef2f2;color:#dc2626}
+.cloud-badge.ok{background:#f0fdf4;color:#16a34a}
+.cloud-badge.saving{background:#eff6ff;color:#2563eb}
+.cloud-badge.err{background:#fef2f2;color:#dc2626}
+.cloud-cfg{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px;margin-bottom:6px;font-size:11px}
+.cloud-cfg input{width:100%;padding:5px 8px;border:1px solid #cbd5e1;border-radius:5px;font-size:11px;margin:4px 0;box-sizing:border-box}
+.cloud-cfg .btn{font-size:11px;padding:4px 10px}
+.main{flex:1;overflow-y:auto}.main-inner{max-width:1200px;margin:0 auto;padding:24px}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px}
+.stat-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.stat-val{font-size:22px;font-weight:700}.stat-label{font-size:12px;color:#64748b}.stat-sub{font-size:10px;color:#94a3b8;margin-top:2px}
+.badge{display:inline-flex;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:600}
+.b-blue{background:#dbeafe;color:#1e40af}.b-green{background:#d1fae5;color:#065f46}.b-yellow{background:#fef3c7;color:#92400e}
+.b-red{background:#fee2e2;color:#991b1b}.b-purple{background:#ede9fe;color:#5b21b6}.b-orange{background:#ffedd5;color:#9a3412}.b-gray{background:#f1f5f9;color:#475569}
+.b-cyan{background:#cffafe;color:#155e75}.b-emerald{background:#d1fae5;color:#065f46}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:none;transition:all .15s}
+.btn-p{background:#2563eb;color:#fff}.btn-p:hover{background:#1d4ed8}
+.btn-s{background:#f1f5f9;color:#475569}.btn-s:hover{background:#e2e8f0}
+.btn-d{background:#fef2f2;color:#dc2626}.btn-d:hover{background:#fee2e2}
+.btn-g{background:#059669;color:#fff}.btn-g:hover{background:#047857}
+.btn-sm{padding:4px 8px;font-size:11px}
+.icon-btn{padding:5px;border-radius:6px;border:none;background:transparent;cursor:pointer;display:inline-flex;transition:background .15s}
+.icon-btn:hover{background:#eff6ff}.icon-btn.danger:hover{background:#fef2f2}
+.input,.sel{border:1px solid #cbd5e1;border-radius:8px;padding:7px 10px;font-size:12px;outline:none;width:100%;transition:border-color .15s}
+.input:focus,.sel:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+.sel{background:#fff;appearance:auto}textarea.input{resize:vertical;min-height:48px}
+.form-label{font-size:11px;font-weight:500;color:#475569;margin-bottom:3px;display:block}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.form-full{grid-column:1/-1}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:8px 12px;font-size:10px;font-weight:600;color:#64748b;background:#f8fafc;border-bottom:1px solid #e2e8f0;text-transform:uppercase;letter-spacing:.5px}
+td{padding:8px 12px;font-size:12px;border-bottom:1px solid #f1f5f9}tr:hover td{background:#f8fafc}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal{background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.2);width:100%;max-height:90vh;overflow-y:auto}
+.modal-sm{max-width:520px}.modal-lg{max-width:720px}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #f1f5f9}
+.modal-head h3{font-size:15px;font-weight:600}.modal-body{padding:18px}
+.alert{border-radius:10px;padding:14px;margin-bottom:12px}
+.alert-or{background:#fff7ed;border:1px solid #fed7aa}.alert-rd{background:#fef2f2;border:1px solid #fecaca}
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:160px;padding:6px 0;border-bottom:1px solid #e2e8f0}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.bar-fill{width:100%;max-width:44px;border-radius:5px 5px 0 0;transition:height .3s;min-height:2px}
+.bar-label{font-size:9px;color:#64748b;text-align:center;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-val{font-size:9px;font-weight:600;color:#334155}
+.pie-wrap{display:flex;align-items:center;gap:20px}
+.pie{width:140px;height:140px;border-radius:50%;position:relative;flex-shrink:0}
+.pie-legend{display:flex;flex-direction:column;gap:4px}
+.pie-item{display:flex;align-items:center;gap:6px;font-size:11px;color:#475569}
+.pie-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.flex-b{display:flex;align-items:center;justify-content:space-between}
+.empty{text-align:center;padding:40px;color:#94a3b8}
+.section{display:flex;flex-direction:column;gap:20px}
+.workflow-bar{display:flex;gap:2px;align-items:center}
+.workflow-step{height:6px;flex:1;border-radius:3px;background:#e2e8f0}
+.workflow-step.done{background:#10b981}
+.workflow-step.current{background:#3b82f6}
+.tree-item{padding:8px 12px;border-left:2px solid #e2e8f0;margin-left:16px;cursor:pointer;transition:all .15s}
+.tree-item:hover{background:#f8fafc;border-color:#3b82f6}
+.tree-family{font-weight:600;font-size:13px;padding:10px 0;cursor:pointer;display:flex;align-items:center;gap:8px}
+.tree-family:hover{color:#2563eb}
+.tag{display:inline-flex;align-items:center;gap:4px;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:500;background:#f1f5f9;color:#475569}
+.nav-section{font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.8px;padding:12px 10px 4px;margin-top:4px;border-top:1px solid #f1f5f9}
+.nav-section:first-child{border-top:none;margin-top:0}
+.save-bar{display:flex;gap:8px;align-items:center;padding:8px;background:#f8fafc;border-radius:8px;margin-top:4px}
+.page{display:flex;flex-direction:column;gap:16px}
+.page-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.page-head h2{font-size:20px;font-weight:700}
+.tag-ok{background:#d1fae5;color:#065f46}.tag-warn{background:#fee2e2;color:#991b1b}.tag-pending{background:#fef3c7;color:#92400e}
+.form-group{display:flex;flex-direction:column;gap:3px}
+.form-group label{font-size:11px;font-weight:500;color:#475569}
+.maint-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;transition:box-shadow .15s}
+.maint-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.06)}
+.maint-card-header{display:flex;justify-content:space-between;align-items:flex-start;padding:14px 16px 10px;gap:12px}
+.maint-card-title{font-size:14px;font-weight:600;color:#1e293b;line-height:1.3}
+.maint-card-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;color:#64748b;margin-top:3px}
+.maint-card-meta .sep::before{content:'·';margin:0 1px;color:#cbd5e1}
+.maint-card-badges{display:flex;gap:5px;align-items:center;flex-shrink:0}
+.maint-card-body{padding:0 16px 12px}
+.maint-card-detail{font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.maint-card-desc{font-size:12px;color:#475569;background:#f8fafc;border-radius:6px;padding:8px 10px;margin-top:6px;white-space:pre-line;line-height:1.5}
+.maint-wf{padding:0 16px 14px}
+.maint-wf-bar{display:flex;gap:3px;align-items:center;margin-bottom:4px}
+.maint-wf-step{height:8px;flex:1;border-radius:4px;background:#e2e8f0;position:relative;transition:background .2s}
+.maint-wf-step.done{background:#10b981}
+.maint-wf-step.current{background:#3b82f6}
+.maint-wf-labels{display:flex;justify-content:space-between}
+.maint-wf-label{font-size:9px;color:#94a3b8;text-align:center;flex:1}
+.maint-wf-label.done{color:#059669;font-weight:600}
+.maint-wf-label.current{color:#2563eb;font-weight:600}
+.maint-card-actions{display:flex;gap:2px}
+.maint-prio{display:inline-block;width:4px;border-radius:2px;align-self:stretch;flex-shrink:0}
+.prio-urgente,.prio-critique,.prio-haute{background:#ef4444}.prio-normale,.prio-moyenne{background:#f59e0b}.prio-basse{background:#94a3b8}
+.photo-grid{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.photo-thumb{width:72px;height:72px;border-radius:8px;object-fit:cover;cursor:pointer;border:1px solid #e2e8f0;transition:transform .15s,box-shadow .15s}
+.photo-thumb:hover{transform:scale(1.05);box-shadow:0 4px 12px rgba(0,0,0,.12)}
+.photo-upload-zone{width:72px;height:72px;border-radius:8px;border:2px dashed #cbd5e1;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:border-color .15s,background .15s;background:#fafbfc}
+.photo-upload-zone:hover{border-color:#3b82f6;background:#eff6ff}
+.photo-upload-zone svg{color:#94a3b8}.photo-upload-zone:hover svg{color:#3b82f6}
+.photo-upload-zone span{font-size:9px;color:#94a3b8;margin-top:2px}
+.photo-lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:100;cursor:pointer;padding:24px}
+.photo-lightbox img{max-width:90vw;max-height:85vh;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.photo-lightbox-close{position:absolute;top:16px;right:20px;color:#fff;font-size:28px;cursor:pointer;background:rgba(255,255,255,.15);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;border:none}
+.photo-lightbox-close:hover{background:rgba(255,255,255,.3)}
+.photo-remove{position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:#ef4444;color:#fff;border:2px solid #fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s;line-height:1}
+.photo-wrap{position:relative;display:inline-block}.photo-wrap:hover .photo-remove{opacity:1}
+@media(max-width:900px){.stats,.g4{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr}}
+@media(max-width:768px){
+.app{flex-direction:column;height:auto;min-height:100vh}
+.sidebar{position:fixed;top:0;left:0;bottom:0;width:260px;z-index:80;transform:translateX(-100%);transition:transform .25s ease;box-shadow:4px 0 24px rgba(0,0,0,.15)}
+.sidebar.mob-open{transform:translateX(0)}
+.mob-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:79}
+.mob-overlay.show{display:block}
+.mob-topbar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fff;border-bottom:1px solid #e2e8f0;position:sticky;top:0;z-index:10}
+.mob-topbar h2{font-size:14px;font-weight:700;color:#1e293b;flex:1}
+.mob-burger{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;cursor:pointer;flex-shrink:0}
+.mob-burger:active{background:#f1f5f9}
+.main{overflow-y:auto;flex:1}
+.main-inner{padding:14px}
+.stats,.g4,.g3,.g2,.form-row{grid-template-columns:1fr}
+.flex-b{flex-wrap:wrap;gap:8px}
+.pie-wrap{flex-direction:column;align-items:flex-start}
+.pie{width:120px;height:120px}
+.modal-bg{padding:8px;align-items:flex-end}
+.modal{max-height:85vh;border-radius:12px 12px 0 0}
+.modal-sm,.modal-lg{max-width:100%}
+table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+th,td{white-space:nowrap;padding:6px 8px;font-size:11px}
+.maint-card-header{flex-direction:column;gap:6px}
+.bar-chart{min-width:300px;overflow-x:auto}
+.photo-thumb,.photo-upload-zone{width:60px;height:60px}
+.btn{padding:8px 14px;font-size:13px}
+.btn-sm{padding:6px 10px;font-size:12px}
+.nav-btn{padding:10px 12px;font-size:13px}
+.input,.sel{padding:9px 12px;font-size:14px}
+.cloud-cfg input{font-size:13px;padding:8px 10px}
+}
+@media(min-width:769px){.mob-topbar{display:none}.mob-overlay{display:none!important}}
+</style>
+</head>
+<body>
+<div id="app" class="app"></div>
+<script>
+// ─── Core DOM helper ───
+const S=(tag,attrs,...kids)=>{const el=document.createElement(tag);if(attrs)Object.entries(attrs).forEach(([k,v])=>{if(k==='style'&&typeof v==='object')Object.assign(el.style,v);else if(k==='className')el.className=v;else if(k==='innerHTML')el.innerHTML=v;else if(k==='value')el.value=v;else if(k==='checked')el.checked=v;else if(k==='selected')el.selected=v;else if(k.startsWith('on'))el.addEventListener(k.slice(2).toLowerCase(),v);else el.setAttribute(k,v)});kids.flat(Infinity).forEach(c=>{if(c==null||c===false)return;el.appendChild(typeof c==='string'||typeof c==='number'?document.createTextNode(String(c)):c)});return el};
+let state={},renderScheduled=false;
+const LS_KEY='gmao-yacht-data';
+const LS_CFG='gmao-yacht-config';
+const DATA_KEYS=['vessels','equipage','composants','maint','couts','inventaire','journal','documents','charters','apaDep','revenus','reglementaire'];
+
+// ─── Cloud sync ───
+function getCloudUrl(){try{const c=JSON.parse(localStorage.getItem(LS_CFG)||'{}');return c.appsScriptUrl||''}catch(e){return ''}}
+function setCloudUrl(url){try{const c=JSON.parse(localStorage.getItem(LS_CFG)||'{}');c.appsScriptUrl=url;localStorage.setItem(LS_CFG,JSON.stringify(c))}catch(e){}}
+let cloudSaveTimer=null;
+let cloudStatus='idle'; // idle, saving, saved, error, loading
+function updateCloudBadge(){const el=document.getElementById('cloud-badge');if(!el)return;const url=getCloudUrl();if(!url){el.textContent='☁ Non connecté';el.className='cloud-badge off';return}if(cloudStatus==='saving'){el.textContent='☁ Synchronisation…';el.className='cloud-badge saving'}else if(cloudStatus==='saved'){el.textContent='☁ Synchronisé';el.className='cloud-badge ok'}else if(cloudStatus==='error'){el.textContent='☁ Erreur sync';el.className='cloud-badge err'}else if(cloudStatus==='loading'){el.textContent='☁ Chargement…';el.className='cloud-badge saving'}else{el.textContent='☁ Connecté';el.className='cloud-badge ok'}}
+
+function cloudSave(){
+  const url=getCloudUrl();if(!url)return;
+  cloudStatus='saving';updateCloudBadge();
+  const d={};DATA_KEYS.forEach(k=>d[k]=state[k]);
+  fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'saveAll',data:d}),mode:'no-cors'})
+    .then(()=>{cloudStatus='saved';updateCloudBadge()})
+    .catch(()=>{cloudStatus='error';updateCloudBadge()});
+}
+function cloudSaveDebounced(){clearTimeout(cloudSaveTimer);cloudSaveTimer=setTimeout(cloudSave,2000)}
+
+function cloudLoad(){
+  const url=getCloudUrl();if(!url)return Promise.resolve(false);
+  cloudStatus='loading';updateCloudBadge();
+  return fetch(url+'?action=loadAll')
+    .then(r=>r.json())
+    .then(d=>{
+      let hasData=false;
+      DATA_KEYS.forEach(k=>{if(d[k]&&d[k].length){state[k]=d[k];hasData=true}});
+      cloudStatus='saved';updateCloudBadge();
+      if(hasData){localStorage.setItem(LS_KEY,JSON.stringify(d));render()}
+      return hasData;
+    })
+    .catch(e=>{cloudStatus='error';updateCloudBadge();return false});
+}
+
+async function uploadPhotoToCloud(base64DataUrl){
+  const url=getCloudUrl();
+  if(!url)return base64DataUrl; // fallback: keep as base64
+  const parts=base64DataUrl.split(',');
+  const mimeMatch=parts[0].match(/data:(.*?);/);
+  const mimeType=mimeMatch?mimeMatch[1]:'image/jpeg';
+  const raw=parts[1];
+  try{
+    const resp=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'uploadPhoto',base64:raw,mimeType:mimeType,fileName:'gmao_'+Date.now()+'.jpg'})});
+    const d=await resp.json();
+    if(d.ok&&d.url)return d.url;
+    return base64DataUrl;
+  }catch(e){return base64DataUrl}
+}
+
+// ─── Local persistence ───
+function persistState(){
+  try{const d={};DATA_KEYS.forEach(k=>d[k]=state[k]);localStorage.setItem(LS_KEY,JSON.stringify(d))}catch(e){if(e.name==='QuotaExceededError')alert('Stockage navigateur plein. Certaines photos n\'ont pas pu être sauvegardées. Utilisez « Exporter JSON » pour sauvegarder vos données.')}
+  cloudSaveDebounced();
+}
+function loadPersistedState(){try{const raw=localStorage.getItem(LS_KEY);if(!raw)return false;const d=JSON.parse(raw);DATA_KEYS.forEach(k=>{if(d[k]!==undefined)state[k]=d[k]});
+// Migration: broker/commission → brokers[]
+if(state.charters)state.charters=state.charters.map(c=>{if(c.brokers)return c;const b=[];if(c.broker)b.push({nom:c.broker,commission:c.commission||0});const nc={...c,brokers:b};delete nc.broker;delete nc.commission;return nc});
+return true}catch(e){return false}}
+function setState(u){Object.assign(state,typeof u==='function'?u(state):u);persistState();if(!renderScheduled){renderScheduled=true;requestAnimationFrame(()=>{renderScheduled=false;render()})}}
+
+// ─── Icons ───
+function icon(n,sz=16){const p={anchor:'<circle cx="12" cy="5" r="3"/><line x1="12" y1="22" x2="12" y2="8"/><path d="M5 12H2a10 10 0 0020 0h-3"/>',ship:'<path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1 .6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M19.38 20A11.6 11.6 0 0021 14l-9-4-9 4a11.6 11.6 0 002.81 7.76"/><path d="M19 13V7a2 2 0 00-2-2H7a2 2 0 00-2 2v6"/><line x1="12" y1="1" x2="12" y2="4"/>',wrench:'<path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>',dollar:'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>',package:'<path d="M16.5 9.4L7.55 4.24"/><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>',book:'<path d="M4 19.5v-15A2.5 2.5 0 016.5 2H20v20H6.5a2.5 2.5 0 010-5H20"/>',file:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>',layout:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>',plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',edit:'<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>',trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>',alert:'<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',check:'<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',x:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',save:'<path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>',search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1.08-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.6 9a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 4.6a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.07V3a2 2 0 014 0v.09c.003.658.396 1.25 1 1.51a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 010 4h-.09c-.658.003-1.25.396-1.51 1z"/>',fuel:'<path d="M3 22V5a2 2 0 012-2h8a2 2 0 012 2v17"/><path d="M15 11h2a2 2 0 012 2v4a1 1 0 002 0V9l-3-3"/><path d="M7 9h4"/><line x1="1" y1="22" x2="21" y2="22"/>',users:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>',box:'<path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>',sail:'<path d="M22 2L12 22 2 12z"/>',shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',download:'<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',upload:'<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',calc:'<rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><line x1="8" y1="10" x2="8" y2="10.01"/><line x1="12" y1="10" x2="12" y2="10.01"/><line x1="16" y1="10" x2="16" y2="10.01"/><line x1="8" y1="14" x2="8" y2="14.01"/><line x1="12" y1="14" x2="12" y2="14.01"/><line x1="8" y1="18" x2="8" y2="18.01"/><line x1="12" y1="18" x2="12" y2="18.01"/>',chevDown:'<polyline points="6 9 12 15 18 9"/>',chevRight:'<polyline points="9 18 15 12 9 6"/>'};const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('width',sz);svg.setAttribute('height',sz);svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','2');svg.setAttribute('stroke-linecap','round');svg.setAttribute('stroke-linejoin','round');svg.style.display='inline-block';svg.style.verticalAlign='middle';svg.style.flexShrink='0';svg.innerHTML=p[n]||'';return svg}
+
+// ─── Helpers ───
+const fD=d=>d?new Date(d).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}):'—';
+const fE=n=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n);
+const nId=a=>Math.max(0,...a.map(i=>i.id))+1;
+const jR=d=>{if(!d)return Infinity;return Math.ceil((new Date(d)-new Date())/(864e5))};
+const COLS=['#0ea5e9','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#06b6d4','#f97316'];
+// USERS_RAW uses vessel name patterns; resolved to IDs at login via getUserVesselIds()
+const USERS_RAW=[
+  {id:'gregory',nom:'Grégory',vesselPatterns:['*'],role:'admin'},
+  {id:'jeanluc',nom:'Jean-Luc',vesselPatterns:['*'],role:'admin'},
+  {id:'florence',nom:'Florence',vesselPatterns:['*'],role:'admin'},
+  {id:'elizabeth',nom:'Elizabeth',vesselPatterns:['*'],role:'admin'},
+  {id:'severine',nom:'Séverine',vesselPatterns:['*'],role:'admin'},
+  {id:'lionel',nom:'Lionel',vesselPatterns:['gunboat'],role:'capitaine'},
+  {id:'philippe',nom:'Philippe',vesselPatterns:['gunboat'],role:'capitaine'},
+  {id:'geoffrey',nom:'Geoffrey',vesselPatterns:['sunreef'],role:'capitaine'},
+];
+function getUserVesselIds(u){
+  if(!state.vessels)return [];
+  if(u.vesselPatterns.includes('*'))return state.vessels.map(v=>v.id);
+  return state.vessels.filter(v=>u.vesselPatterns.some(p=>v.nom.toLowerCase().includes(p))).map(v=>v.id);
+}
+// USERS proxy: each user object exposes a vesselIds getter
+const USERS=USERS_RAW.map(u=>({...u,get vesselIds(){return getUserVesselIds(u)}}));
+// Mots de passe par groupe
+const GROUP_PWD={
+  admin:'admin2026',
+  gunboat:'gunboat2026',
+  sunreef:'sunreef80'
+};
+function getUserGroup(u){
+  if(u.role==='admin')return 'admin';
+  if(u.vesselPatterns&&u.vesselPatterns.includes('gunboat'))return 'gunboat';
+  if(u.vesselPatterns&&u.vesselPatterns.includes('sunreef'))return 'sunreef';
+  return null;
+}
+function checkUserPassword(userId,pwd){
+  const u=USERS.find(u=>u.id===userId);if(!u)return false;
+  const g=getUserGroup(u);return g&&GROUP_PWD[g]===pwd;
+}
+const badge=(t,c='blue')=>S('span',{className:'badge b-'+c},t);
+function getCurrentUser(){
+  try{const c=JSON.parse(localStorage.getItem('gmao-yacht-config')||'{}');
+  return USERS.find(u=>u.id===c.currentUserId)||null}catch(e){return null}
+}
+function setCurrentUser(userId){
+  try{const c=JSON.parse(localStorage.getItem('gmao-yacht-config')||'{}');
+  c.currentUserId=userId;localStorage.setItem('gmao-yacht-config',JSON.stringify(c))}catch(e){}
+}
+function logout(){
+  try{const c=JSON.parse(localStorage.getItem('gmao-yacht-config')||'{}');
+  delete c.currentUserId;localStorage.setItem('gmao-yacht-config',JSON.stringify(c))}catch(e){}
+  state.currentUser=null;render();
+}
+const today=()=>new Date().toISOString().split('T')[0];
+const addDays=(dateStr,days)=>{const d=new Date(dateStr);d.setDate(d.getDate()+days);return d.toISOString().split('T')[0]};
+const getRecurrenceDays=rec=>{const map={aucune:0,mensuelle:30,trimestrielle:90,semestrielle:180,annuelle:365,'2ans':730,'3ans':1095,'5ans':1825};return map[rec]||0};
+const esc=s=>(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+const fmt=fE;
+const vesselName=nId=>{const v=state.vessels.find(v=>v.id===nId);return v?v.nom:'—'};
+const allowedVessels=()=>{const u=state.currentUser;if(!u)return state.vessels;return state.vessels.filter(v=>u.vesselIds.includes(v.id))};
+function filterByVessel(arr){const vid=state.filterNav?+state.filterNav:null;return vid?arr.filter(i=>i.nId===vid):arr}
+function makeVesselFilter(){
+  const user=state.currentUser;
+  if(user&&user.vesselIds.length===1){
+    const v=state.vessels.find(v=>v.id===user.vesselIds[0]);
+    return S('span',{style:{fontWeight:600,color:'#0ea5e9'}},v?v.nom:'');
+  }
+  const sel=S('select',{className:'sel',onChange:e=>setState({filterNav:e.target.value})});
+  sel.appendChild(S('option',{value:''},'Tous les navires'));
+  allowedVessels().forEach(v=>{const o=S('option',{value:v.id},v.nom);if(state.filterNav===String(v.id))o.selected=true;sel.appendChild(o)});
+  return sel;
+}
+function statCard(label,val,ic,color){const c=S('div',{className:'stat'});const i=S('div',{className:'stat-icon',style:{background:color+'20',color:color}});i.appendChild(icon(ic,18));c.appendChild(i);c.appendChild(S('div',{className:'stat-val'},String(val)));c.appendChild(S('div',{className:'stat-label'},label));return c}
+
+// ─── Photo helpers ───
+function compressImage(dataUrl,maxW,maxH,quality){
+  return new Promise(resolve=>{
+    const img=new Image();
+    img.onload=()=>{
+      let w=img.width,h=img.height;
+      if(w>maxW){h=Math.round(h*maxW/w);w=maxW}
+      if(h>maxH){w=Math.round(w*maxH/h);h=maxH}
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      resolve(c.toDataURL('image/jpeg',quality));
+    };
+    img.src=dataUrl;
+  });
+}
+function photoUpload(photos,onAdd,onRemove){
+  const grid=S('div',{className:'photo-grid'});
+  (photos||[]).forEach((src,i)=>{
+    const wrap=S('div',{className:'photo-wrap'});
+    const img=S('img',{className:'photo-thumb',src:src});
+    img.addEventListener('click',()=>showLightbox(src));
+    wrap.appendChild(img);
+    const rm=S('button',{className:'photo-remove',onClick:e=>{e.stopPropagation();onRemove(i);}});
+    rm.textContent='×';
+    wrap.appendChild(rm);
+    grid.appendChild(wrap);
+  });
+  // Upload button
+  const zone=S('div',{className:'photo-upload-zone'});
+  zone.appendChild(icon('plus',18));
+  zone.appendChild(S('span',{},'Photo'));
+  const inp=S('input',{type:'file',accept:'image/*',multiple:'true',style:{display:'none'}});
+  inp.addEventListener('change',e=>{
+    Array.from(e.target.files).forEach(f=>{
+      if(f.size>10*1024*1024)return;
+      const reader=new FileReader();
+      reader.onload=ev=>{
+        compressImage(ev.target.result,1200,900,0.6).then(compressed=>{
+          if(getCloudUrl()){
+            uploadPhotoToCloud(compressed).then(url=>onAdd(url));
+          }else{
+            onAdd(compressed);
+          }
+        });
+      };
+      reader.readAsDataURL(f);
+    });
+    inp.value='';
+  });
+  zone.addEventListener('click',()=>inp.click());
+  zone.appendChild(inp);
+  grid.appendChild(zone);
+  return grid;
+}
+function showLightbox(src){
+  const lb=S('div',{className:'photo-lightbox',onClick:()=>lb.remove()});
+  const closeBtn=S('button',{className:'photo-lightbox-close',onClick:()=>lb.remove()});
+  closeBtn.textContent='×';
+  lb.appendChild(closeBtn);
+  lb.appendChild(S('img',{src:src,onClick:e=>e.stopPropagation()}));
+  document.body.appendChild(lb);
+}
+function photoGallery(photos){
+  if(!photos||!photos.length)return S('span');
+  const grid=S('div',{className:'photo-grid'});
+  photos.forEach(src=>{
+    const img=S('img',{className:'photo-thumb',src:src});
+    img.addEventListener('click',()=>showLightbox(src));
+    grid.appendChild(img);
+  });
+  return grid;
+}
+
+// ─── UI Builders ───
+function makeSelect(label,options,val,onChange){const w=S('div');if(label)w.appendChild(S('label',{className:'form-label'},label));const s=S('select',{className:'sel',onChange});s.appendChild(S('option',{value:''},'— Sélectionner —'));options.forEach(o=>{const opt=S('option',{value:o},o);if(o===val)opt.selected=true;s.appendChild(opt)});w.appendChild(s);return w}
+function makeInput(label,type,val,onChange,opts={}){const w=S('div');if(label)w.appendChild(S('label',{className:'form-label'},label));if(opts.textarea){w.appendChild(S('textarea',{className:'input',value:val||'',onInput:onChange}))}else{const inp=S('input',{className:'input',type:type||'text',value:val==null?'':val,onInput:onChange});if(opts.step)inp.step=opts.step;w.appendChild(inp)}return w}
+function makeVesselSel(val,onChange){const w=S('div');w.appendChild(S('label',{className:'form-label'},'Navire'));const s=S('select',{className:'sel',onChange});allowedVessels().forEach(v=>{const o=S('option',{value:v.id},v.nom);if(v.id==val)o.selected=true;s.appendChild(o)});w.appendChild(s);return w}
+function makeCrewSel(nId,val,onChange){const w=S('div');w.appendChild(S('label',{className:'form-label'},'Assigné à'));const s=S('select',{className:'sel',onChange});s.appendChild(S('option',{value:''},'— Non assigné —'));state.equipage.filter(e=>e.nId===nId||!e.nId).forEach(e=>{const o=S('option',{value:e.id},e.nom+' ('+e.role+')');if(e.id==val)o.selected=true;s.appendChild(o)});w.appendChild(s);return w}
+function openModal(n,d){setState({modal:n,edit:d})}
+function closeModal(){setState({modal:null,edit:null})}
+function renderModal(title,wide,contentFn){if(!state.modal)return null;const bg=S('div',{className:'modal-bg',onClick:closeModal});const m=S('div',{className:'modal '+(wide?'modal-lg':'modal-sm'),onClick:e=>e.stopPropagation()});const h=S('div',{className:'modal-head'},S('h3',null,title));const cb=S('button',{className:'icon-btn',onClick:closeModal});cb.appendChild(icon('x',16));h.appendChild(cb);m.appendChild(h);const b=S('div',{className:'modal-body'});b.appendChild(contentFn());m.appendChild(b);bg.appendChild(m);return bg}
+function makePie(data){const t=data.reduce((s,d)=>s+d.value,0);if(!t)return S('div',{className:'empty'},'—');let c=0;const parts=data.map((d,i)=>{const s=(c/t)*360;c+=d.value;return COLS[i%COLS.length]+' '+s+'deg '+(c/t)*360+'deg'});const pie=S('div',{className:'pie',style:{background:'conic-gradient('+parts.join(',')+')'}});pie.appendChild(S('div',{style:{position:'absolute',top:'25%',left:'25%',width:'50%',height:'50%',background:'#fff',borderRadius:'50%'}}));const leg=S('div',{className:'pie-legend'});data.forEach((d,i)=>leg.appendChild(S('div',{className:'pie-item'},S('span',{className:'pie-dot',style:{background:COLS[i%COLS.length]}}),d.name+': '+fE(d.value))));return S('div',{className:'pie-wrap'},pie,leg)}
+function makeBar(data,colFn){const mx=Math.max(...data.map(d=>d.value),1);const ch=S('div',{className:'bar-chart'});data.forEach((d,i)=>{const h=Math.max((d.value/mx)*140,2);ch.appendChild(S('div',{className:'bar-col'},S('div',{className:'bar-val'},d.value>=1000?(d.value/1000).toFixed(1)+'k':String(d.value)),S('div',{className:'bar-fill',style:{height:h+'px',background:colFn?colFn(i):COLS[i%COLS.length]}}),S('div',{className:'bar-label'},d.name)))});return ch}
+
+// ─── Export functions ───
+function exportCSV(data,cols,filename){const rows=[cols.join(';')];data.forEach(r=>{rows.push(cols.map(c=>{let v=r[c];if(v==null)v='';return String(v).replace(/;/g,',')}).join(';'))});const blob=new Blob(['\ufeff'+rows.join('\n')],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click()}
+function exportPrint(title,htmlContent){const w=window.open('','','width=900,height=700');w.document.write('<html><head><title>'+title+'</title><style>body{font-family:Arial,sans-serif;padding:20px;font-size:12px}h1{font-size:18px;margin-bottom:10px}table{width:100%;border-collapse:collapse;margin-top:10px}th,td{border:1px solid #ddd;padding:6px 8px;text-align:left;font-size:11px}th{background:#f0f0f0;font-weight:600}.badge{padding:2px 6px;border-radius:4px;font-size:10px}@media print{button{display:none}}</style></head><body>');w.document.write('<h1>'+title+'</h1><p>Exporté le '+fD(new Date().toISOString().split('T')[0])+'</p>');w.document.write(htmlContent);w.document.write('<br><button onclick="window.print()">Imprimer / PDF</button></body></html>');w.document.close()}
+
+// ─── Save / Load ───
+function saveData(){const d=JSON.stringify({vessels:state.vessels,maint:state.maint,couts:state.couts,inventaire:state.inventaire,journal:state.journal,documents:state.documents,equipage:state.equipage,composants:state.composants,charters:state.charters,revenus:state.revenus,reglementaire:state.reglementaire});const blob=new Blob([d],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='gmao-yacht-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click()}
+function loadData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);Object.keys(d).forEach(k=>{if(state[k]!==undefined)state[k]=d[k]});persistState();render();alert('Données restaurées avec succès !')}catch(err){alert('Erreur: fichier invalide')}};r.readAsText(f)}
+function resetData(){if(!confirm('Réinitialiser toutes les données ? Les modifications seront perdues.'))return;localStorage.removeItem(LS_KEY);Object.assign(state,JSON.parse(JSON.stringify(INIT)));render()}
+
+// ─── INITIAL DATA ───
+const INIT={
+page:'dashboard',modal:null,edit:null,filterNav:'',search:'',sideOpen:true,showCloudCfg:false,comptaMois:new Date().toISOString().slice(0,7),maintTemporalFilter:'Tous',maintFamilleFilter:'',currentUser:null,
+vessels:[
+  {id:1,nom:'Gunboat 72',type:'voile',longueur:22,annee:2020,port:'Antibes',immat:'NI-722020',statut:'actif',carenage:'2026-06-15',heures:980,img:'⛵',photo:'data:image/jpeg;base64,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'},
+  {id:2,nom:'80 Sunreef Power',type:'moteur',longueur:24,annee:2022,port:'Antibes',immat:'NI-802022',statut:'actif',carenage:'2026-09-01',heures:620,img:'🚤',photo:'data:image/jpeg;base64,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'},
+],
+equipage:[
+  {id:1,nId:1,nom:'Lionel Mather',role:'Capitaine',tel:'+33 6 88 86 19 72',email:'lionel.mather@gmail.com',actif:true},
+  {id:2,nId:1,nom:'Pierre Gallet',role:'Mécanicien',tel:'+33612000001',email:'pierre.gallet@mail.com',actif:true},
+  {id:3,nId:2,nom:'Geoffrey Vidale-Noyel',role:'Capitaine',tel:'+33 7 87 42 71 70',email:'geoffrey.vn@mail.com',actif:true},
+  {id:4,nId:2,nom:'Sophie Renard',role:'Second',tel:'+33645678901',email:'sophie.renard@mail.com',actif:true},
+],
+composants:[
+  {id:1,nId:1,famille:'Gréement & Voiles',sg:'Grand-voile',nom:'Doyle Stratis ICE',marque:'Doyle Sails',modele:'Stratis ICE',serie:'DS-2020-144',install:'2020-05-01',manuel:'Rinçage eau douce après chaque nav, inspection annuelle coutures'},
+  {id:2,nId:1,famille:'Gréement & Voiles',sg:'Génois',nom:'North Sails 3Di',marque:'North Sails',modele:'3Di RAW 760',serie:'NS-2020-287',install:'2020-05-01',manuel:'Stockage enroulé à sec, contrôle UV 6 mois'},
+  {id:3,nId:1,famille:'Propulsion',sg:'Moteur auxiliaire',nom:'Volvo Penta D2-60',marque:'Volvo Penta',modele:'D2-60',serie:'VP-2020-3301',install:'2020-05-01',manuel:'Vidange 200h, filtres 500h'},
+  {id:4,nId:1,famille:'Électronique & Navigation',sg:'GPS / Traceur',nom:'B&G Zeus³ 16',marque:'B&G',modele:'Zeus³ 16',serie:'BG-2020-1102',install:'2020-05-01',manuel:'MAJ cartographie annuelle'},
+  {id:5,nId:1,famille:'Électricité & Batteries',sg:'Parc servitude',nom:'Batteries Victron 200Ah x6',marque:'Victron',modele:'LiFePO4 200Ah',serie:'',install:'2023-09-10',manuel:'Durée de vie ~3000 cycles'},
+  {id:6,nId:1,famille:'Sécurité & Sauvetage',sg:'Radeau de survie',nom:'Plastimo Transocean 10P',marque:'Plastimo',modele:'Transocean 10P',serie:'PL-2022-611',install:'2022-06-15',manuel:'Révision tous les 2 ans en station agréée'},
+  {id:7,nId:2,famille:'Propulsion',sg:'Moteur principal',nom:'MAN V12-1900 x2',marque:'MAN',modele:'V12-1900',serie:'MAN-2022-8891',install:'2022-01-10',manuel:'Vidange 250h, filtres 500h, injecteurs 2000h'},
+  {id:8,nId:2,famille:'Électronique & Navigation',sg:'GPS / Traceur',nom:'Garmin GPSMAP 8616xsv',marque:'Garmin',modele:'GPSMAP 8616xsv',serie:'GA-2022-3345',install:'2022-01-10',manuel:'MAJ cartographie annuelle'},
+  {id:9,nId:2,famille:'Climatisation & Ventilation',sg:'Centrale clim',nom:'Marine Air Systems 60K',marque:'Marine Air',modele:'60000 BTU',serie:'MA-2022-778',install:'2022-01-10',manuel:'Nettoyage échangeur 6 mois, recharge gaz 2 ans'},
+  {id:10,nId:2,famille:'Électricité & Batteries',sg:'Parc servitude',nom:'Batteries Victron 300Ah x8',marque:'Victron',modele:'LiFePO4 300Ah',serie:'',install:'2022-01-10',manuel:'Durée de vie ~3000 cycles'},
+],
+maint:[
+  {id:1,nId:1,compId:3,cat:'Moteur auxiliaire',titre:'Vidange moteur + filtres',prio:'Haute',statut:'Planifiée',echeance:'2026-04-10',dateFin:null,freq:180,cout:650,coutReel:null,assigneA:2,desc:'Huile Volvo Penta 15W-40 — D2-60',justif:'En attente',workflow:[{step:'Demandée',par:'Lionel Mather',date:'2026-03-20'},{step:'Approuvée',par:'Grégory C.',date:'2026-03-21'}],photos:[],recurrence:'mensuelle',parentId:null,checklist:[],factures:[]},
+  {id:2,nId:1,compId:null,cat:'Coque & antifouling',titre:'Carénage complet + antifouling',prio:'Moyenne',statut:'Planifiée',echeance:'2026-06-15',dateFin:null,freq:365,cout:5500,coutReel:null,assigneA:null,desc:'Sortie d\'eau catamaran — 2 coques',justif:'En attente',workflow:[{step:'Demandée',par:'Lionel Mather',date:'2026-03-15'}],photos:[],recurrence:'annuelle',parentId:null,checklist:[],factures:[]},
+  {id:3,nId:1,compId:1,cat:'Gréement & voiles',titre:'Inspection grand-voile + lazy jacks',prio:'Haute',statut:'En retard',echeance:'2026-03-15',dateFin:null,freq:365,cout:1200,coutReel:null,assigneA:1,desc:'Vérifier coutures et renforts Doyle Stratis',justif:'Manquant',workflow:[{step:'Demandée',par:'Lionel Mather',date:'2026-02-20'},{step:'Approuvée',par:'Grégory C.',date:'2026-02-22'}],photos:[],recurrence:'annuelle',parentId:null,checklist:[],factures:[]},
+  {id:4,nId:1,compId:null,cat:'Sécurité & sauvetage',titre:'Révision radeau de survie',prio:'Critique',statut:'Planifiée',echeance:'2026-04-01',dateFin:null,freq:730,cout:1100,coutReel:null,assigneA:null,desc:'Plastimo Transocean 10P',justif:'En attente',workflow:[{step:'Demandée',par:'Lionel Mather',date:'2026-03-10'}],photos:[],recurrence:'2ans',parentId:null,checklist:[],factures:[]},
+  {id:5,nId:2,compId:7,cat:'Moteur principal',titre:'Vidange MAN V12 + filtres',prio:'Haute',statut:'En cours',echeance:'2026-03-25',dateFin:null,freq:250,cout:2800,coutReel:2650,assigneA:3,desc:'Vidange 2 moteurs MAN V12-1900',justif:'Justifié',workflow:[{step:'Demandée',par:'Geoffrey Vidale-Noyel',date:'2026-03-18'},{step:'Approuvée',par:'Grégory C.',date:'2026-03-19'},{step:'En cours',par:'Geoffrey Vidale-Noyel',date:'2026-03-25'}],photos:[],recurrence:'aucune',parentId:null,checklist:[],factures:[]},
+  {id:6,nId:1,compId:4,cat:'Électronique & navigation',titre:'MAJ cartographie B&G',prio:'Basse',statut:'Réalisée',echeance:'2026-03-01',dateFin:'2026-03-02',freq:365,cout:200,coutReel:190,assigneA:1,desc:'Mise à jour C-MAP',justif:'Justifié',workflow:[{step:'Demandée',par:'Lionel Mather',date:'2026-02-15'},{step:'Approuvée',par:'Grégory C.',date:'2026-02-16'},{step:'En cours',par:'Lionel Mather',date:'2026-03-01'},{step:'Réalisée',par:'Lionel Mather',date:'2026-03-02'},{step:'Validée',par:'Grégory C.',date:'2026-03-03'}],photos:[],recurrence:'annuelle',parentId:null,checklist:[],factures:[]},
+  {id:7,nId:2,compId:9,cat:'Climatisation',titre:'Nettoyage échangeur thermique',prio:'Moyenne',statut:'Planifiée',echeance:'2026-05-01',dateFin:null,freq:180,cout:800,coutReel:null,assigneA:null,desc:'Marine Air Systems 60K',justif:'En attente',workflow:[],photos:[],recurrence:'trimestrielle',parentId:null,checklist:[],factures:[]},
+  {id:8,nId:2,compId:null,cat:'Électricité & batteries',titre:'Contrôle parc batteries',prio:'Haute',statut:'Planifiée',echeance:'2026-04-15',dateFin:null,freq:365,cout:400,coutReel:null,assigneA:4,desc:'Test capacité Victron LiFePO4 300Ah x8',justif:'En attente',workflow:[{step:'Demandée',par:'Sophie Renard',date:'2026-03-20'}],photos:[],recurrence:'annuelle',parentId:null,checklist:[],factures:[]},
+  {id:9,nId:1,compId:null,cat:'Coque & antifouling',titre:'Checklist hivernage Gunboat 72',prio:'Haute',statut:'Planifiée',echeance:'2026-11-01',dateFin:null,freq:365,cout:3500,coutReel:null,assigneA:1,desc:'Procédure complète de mise en hivernage — saison 2026/2027',justif:'En attente',workflow:[{step:'Demandée',par:'Grégory C.',date:'2026-04-13'}],photos:[],recurrence:'annuelle',parentId:null,checklist:[
+    {id:1,text:'Vidange moteurs auxiliaires + remplacement antigel',done:false},
+    {id:2,text:'Rinçage complet circuits eau de mer',done:false},
+    {id:3,text:'Vidange circuit eau douce + ajout antigel sanitaire',done:false},
+    {id:4,text:'Vérification et graissage vannes de coque',done:false},
+    {id:5,text:'Fermeture vannes de coque et passes-coques',done:false},
+    {id:6,text:'Débranchement et stockage batteries (contrôle tension)',done:false},
+    {id:7,text:'Rinçage et séchage réservoirs carburant',done:false},
+    {id:8,text:'Nettoyage fond de cale + traitement anti-moisissure',done:false},
+    {id:9,text:'Inspection et rangement voiles (grand-voile, génois, spi)',done:false},
+    {id:10,text:'Graissage winches et accastillage de pont',done:false},
+    {id:11,text:'Rinçage et lubrification enrouleurs',done:false},
+    {id:12,text:'Nettoyage et traitement teck / surfaces extérieures',done:false},
+    {id:13,text:'Vérification amarres et défenses',done:false},
+    {id:14,text:'Bâchage / pose housse hivernage',done:false},
+    {id:15,text:'Ventilation intérieure (ouverture aérations + déshumidificateur)',done:false},
+    {id:16,text:'Débranchement électronique sensible (GPS, VHF, AIS)',done:false},
+    {id:17,text:'Vidange et nettoyage réservoir eaux noires',done:false},
+    {id:18,text:'Contrôle et charge extincteurs',done:false},
+    {id:19,text:'Inventaire pièces détachées à commander pour remise en service',done:false},
+    {id:20,text:'Rapport photographique état général avant hivernage',done:false}
+  ],factures:[]},
+  {id:10,nId:2,compId:null,cat:'Coque & antifouling',titre:'Checklist hivernage 80 Sunreef Power',prio:'Haute',statut:'Planifiée',echeance:'2026-11-01',dateFin:null,freq:365,cout:5000,coutReel:null,assigneA:3,desc:'Procédure complète de mise en hivernage — saison 2026/2027',justif:'En attente',workflow:[{step:'Demandée',par:'Grégory C.',date:'2026-04-13'}],photos:[],recurrence:'annuelle',parentId:null,checklist:[
+    {id:1,text:'Vidange moteurs MAN V12 + remplacement antigel',done:false},
+    {id:2,text:'Rinçage complet circuits eau de mer',done:false},
+    {id:3,text:'Vidange circuit eau douce + ajout antigel sanitaire',done:false},
+    {id:4,text:'Vérification et graissage vannes de coque',done:false},
+    {id:5,text:'Fermeture vannes de coque et passes-coques',done:false},
+    {id:6,text:'Débranchement et stockage batteries Victron LiFePO4',done:false},
+    {id:7,text:'Rinçage et séchage réservoirs carburant',done:false},
+    {id:8,text:'Nettoyage fond de cale + traitement anti-moisissure',done:false},
+    {id:9,text:'Vidange et hivernage groupe électrogène',done:false},
+    {id:10,text:'Hivernage climatisation (vidange, nettoyage filtres)',done:false},
+    {id:11,text:'Vidange hydraulique (stabilisateurs, passerelle)',done:false},
+    {id:12,text:'Nettoyage et protection gelcoat coque',done:false},
+    {id:13,text:'Vérification amarres et défenses',done:false},
+    {id:14,text:'Bâchage / pose housse hivernage',done:false},
+    {id:15,text:'Ventilation intérieure (ouverture aérations + déshumidificateur)',done:false},
+    {id:16,text:'Débranchement électronique sensible (GPS, VHF, AIS)',done:false},
+    {id:17,text:'Vidange et nettoyage réservoir eaux noires',done:false},
+    {id:18,text:'Contrôle et charge extincteurs',done:false},
+    {id:19,text:'Nettoyage et traitement teck / surfaces extérieures',done:false},
+    {id:20,text:'Inventaire pièces détachées à commander pour remise en service',done:false},
+    {id:21,text:'Rapport photographique état général avant hivernage',done:false}
+  ],factures:[]},
+],
+couts:[
+  {id:1,nId:1,cat:'Maintenance',desc:'Vidange moteur D2-60',montant:650,date:'2026-01-15',fournisseur:'FAC-2026-001',justif:'Justifié'},
+  {id:2,nId:1,cat:'Carburant',desc:'Plein diesel',montant:480,date:'2026-02-10',fournisseur:'FAC-2026-012',justif:'Justifié'},
+  {id:3,nId:1,cat:'Assurance',desc:'Prime annuelle',montant:9500,date:'2026-01-01',fournisseur:'ASS-2026-001',justif:'Justifié'},
+  {id:4,nId:1,cat:'Place de port',desc:'Annuité Antibes',montant:18000,date:'2026-01-01',fournisseur:'PORT-2026-001',justif:'Justifié'},
+  {id:5,nId:2,cat:'Maintenance',desc:'Vidange MAN V12 x2',montant:2650,date:'2026-03-25',fournisseur:'FAC-2026-025',justif:'En attente'},
+  {id:6,nId:2,cat:'Carburant',desc:'Plein diesel',montant:3200,date:'2026-03-10',fournisseur:'FAC-2026-022',justif:'Justifié'},
+  {id:7,nId:2,cat:'Assurance',desc:'Prime annuelle',montant:18000,date:'2026-01-01',fournisseur:'ASS-2026-002',justif:'Justifié'},
+  {id:8,nId:2,cat:'Place de port',desc:'Annuité Antibes',montant:24000,date:'2026-01-01',fournisseur:'PORT-2026-002',justif:'Justifié'},
+  {id:9,nId:1,cat:'Maintenance',desc:'MAJ cartographie B&G',montant:190,date:'2026-03-02',fournisseur:'FAC-2026-020',justif:'Justifié'},
+  {id:10,nId:1,cat:'Équipage',desc:'Salaire capitaine Jan',montant:5000,date:'2026-01-31',fournisseur:'SAL-2026-001',justif:'Justifié'},
+  {id:11,nId:1,cat:'Équipage',desc:'Salaire capitaine Fev',montant:5000,date:'2026-02-28',fournisseur:'SAL-2026-002',justif:'Manquant'},
+  {id:12,nId:2,cat:'Équipage',desc:'Salaire capitaine Mar',montant:5500,date:'2026-03-31',fournisseur:'',justif:'Manquant'},
+],
+inventaire:[
+  {id:1,nId:1,ref:'VP-15W40-5L',nom:'Huile Volvo Penta 15W-40',cat:'Moteur',qte:6,seuil:3,fournisseur:'Volvo Penta France',emplacement:'Local Antibes'},
+  {id:2,nId:1,ref:'RAC-ZN-50',nom:'Anodes zinc 50mm',cat:'Coque',qte:16,seuil:8,fournisseur:'Accastillage Diffusion',emplacement:'Local Antibes'},
+  {id:3,nId:1,ref:'INT-AF-2.5',nom:'Antifouling International 2.5L',cat:'Coque',qte:4,seuil:2,fournisseur:'Accastillage Diffusion',emplacement:'Local Antibes'},
+  {id:4,nId:1,ref:'FUS-30A',nom:'Fusibles 30A (x10)',cat:'Électricité',qte:5,seuil:3,fournisseur:'Électro Marine',emplacement:'Bord Gunboat 72'},
+  {id:5,nId:2,ref:'MAN-OIL-20',nom:'Huile MAN 15W-40 20L',cat:'Moteur',qte:4,seuil:2,fournisseur:'MAN Marine France',emplacement:'Local Antibes'},
+  {id:6,nId:2,ref:'MAN-FILT',nom:'Filtre huile MAN V12',cat:'Moteur',qte:6,seuil:4,fournisseur:'MAN Marine France',emplacement:'Local Antibes'},
+  {id:7,nId:1,ref:'CORD-DYN',nom:'Cordage Dyneema 12mm/m',cat:'Gréement',qte:60,seuil:20,fournisseur:'Lancelin',emplacement:'Bord Gunboat 72'},
+],
+journal:[
+  {id:1,nId:1,date:'2026-03-26',type:'Navigation',hm:5.2,mi:48,meteo:'Beau, NE 12nds',auteur:'Lionel Mather',eq:3,text:'Nav entre les îles de Lérins. Conditions idéales.',carb:35,photos:[]},
+  {id:2,nId:2,date:'2026-03-24',type:'Navigation',hm:3.5,mi:42,meteo:'W 10nds, mer belle',auteur:'Geoffrey Vidale-Noyel',eq:3,text:'Sortie client vers Saint-Tropez. Bonne prestation.',carb:450,photos:[]},
+  {id:3,nId:2,date:'2026-03-20',type:'Maintenance',hm:0,mi:0,meteo:'-',auteur:'Geoffrey Vidale-Noyel',eq:2,text:'Début vidange moteurs MAN V12.',carb:0,photos:[]},
+  {id:4,nId:1,date:'2026-03-20',type:'Navigation',hm:7,mi:62,meteo:'Soleil, SE 8nds',auteur:'Lionel Mather',eq:4,text:'Transfert Antibes → Cannes pour salon nautique.',carb:20,photos:[]},
+],
+documents:[
+  {id:1,nId:1,nom:'Certificat de navigation',cat:'Réglementaire',echeance:'2027-01-15',statut:'Valide',notes:'Affaires Maritimes — Gunboat 72'},
+  {id:2,nId:1,nom:"Police d'assurance RC",cat:'Assurance',echeance:'2026-12-31',statut:'Valide',notes:'AXA Maritime'},
+  {id:3,nId:2,nom:'Certificat de navigation',cat:'Réglementaire',echeance:'2027-06-01',statut:'Valide',notes:'Affaires Maritimes — 80 Sunreef Power'},
+  {id:4,nId:2,nom:"Police d'assurance RC",cat:'Assurance',echeance:'2026-12-31',statut:'Valide',notes:'AXA Maritime'},
+  {id:5,nId:2,nom:'Certification ISM',cat:'Réglementaire',echeance:'2026-11-15',statut:'Valide',notes:'Intl Safety Management'},
+  {id:6,nId:2,nom:'Contrat charter été 2026',cat:'Commercial',echeance:'2026-09-30',statut:'Valide',notes:'Saison été 2026'},
+],
+charters:[
+  {id:1,nId:2,client:'M. et Mme Laurent',debut:'2026-07-05',fin:'2026-07-12',zone:'Côte d\'Azur',apa:8000,montant:35000,statut:'Confirmé',notes:'7 nuits, 6 pax',brokers:[{nom:'Magellan Charters',commission:5}],cruisingArea:'Côte d\'Azur'},
+  {id:2,nId:2,client:'Groupe Techcorp',debut:'2026-08-01',fin:'2026-08-08',zone:'Corse',apa:12000,montant:55000,statut:'Confirmé',notes:'Charter corporate, 8 pax',brokers:[{nom:'YachtLife',commission:8}],cruisingArea:'Corse'},
+  {id:3,nId:1,client:'Famille Dubois',debut:'2026-07-20',fin:'2026-07-25',zone:'Îles de Lérins',apa:4000,montant:12000,statut:'En option',notes:'5 nuits, 4 pax — voile',brokers:[],cruisingArea:'Îles de Lérins'},
+],
+apaDep:[
+  {id:1,charterId:1,nId:2,desc:'Avitaillement Carrefour',montant:1200,date:'2026-07-05',cat:'Nourriture',justif:'Justifié'},
+  {id:2,charterId:1,nId:2,desc:'Plein carburant',montant:3500,date:'2026-07-06',cat:'Carburant',justif:'Justifié'},
+  {id:3,charterId:1,nId:2,desc:'Restaurant port Cannes',montant:650,date:'2026-07-08',cat:'Restaurant',justif:'En attente'},
+  {id:4,charterId:2,nId:2,desc:'Avitaillement traiteur',montant:3500,date:'2026-08-01',cat:'Nourriture',justif:'En attente'},
+],
+revenus:[
+  {id:1,nId:2,type:'Charter',desc:'Charter Laurent — Juillet',montant:35000,date:'2026-07-05',chartId:1},
+  {id:2,nId:2,type:'Charter',desc:'Charter Techcorp — Août',montant:55000,date:'2026-08-01',chartId:2},
+  {id:3,nId:1,type:'Charter',desc:'Charter Dubois (option)',montant:12000,date:'2026-07-20',chartId:3},
+  {id:4,nId:1,type:'Autre',desc:'Location journée presse',montant:3000,date:'2026-03-15',chartId:null},
+],
+reglementaire:[
+  {id:1,nId:1,nom:'Certificat de navigation',cat:'Navigation',eauxFr:true,eauxEtr:true,echeance:'2027-01-15',statut:'Conforme',notes:'Affaires Maritimes'},
+  {id:2,nId:1,nom:'Permis de mise en exploitation',cat:'Sécurité',eauxFr:true,eauxEtr:false,echeance:'2027-06-01',statut:'Conforme',notes:''},
+  {id:3,nId:2,nom:'Certificat de navigation',cat:'Navigation',eauxFr:true,eauxEtr:true,echeance:'2027-06-01',statut:'Conforme',notes:''},
+  {id:4,nId:2,nom:'Certification ISM',cat:'Sécurité',eauxFr:true,eauxEtr:true,echeance:'2026-11-15',statut:'Conforme',notes:'Renouvellement prévu'},
+],
+};
+
+state=JSON.parse(JSON.stringify(INIT));
+loadPersistedState();
+// Auto-création tâches hivernage manquantes
+(function ensureHivernageTasks(){
+  if(!state.vessels||!state.maint)return;
+  let added=false;
+  state.vessels.forEach(v=>{
+    const exists=state.maint.some(m=>m.nId===v.id&&m.titre&&m.titre.toLowerCase().includes('hivernage'));
+    if(!exists){
+      const isMotor=v.nom.toLowerCase().includes('sunreef')||v.nom.toLowerCase().includes('power');
+      const base=['Vidange moteurs + remplacement antigel','Rinçage complet circuits eau de mer','Vidange circuit eau douce + ajout antigel sanitaire','Vérification et graissage vannes de coque','Fermeture vannes de coque et passes-coques','Débranchement et stockage batteries (contrôle tension)','Rinçage et séchage réservoirs carburant','Nettoyage fond de cale + traitement anti-moisissure','Vérification amarres et défenses','Bâchage / pose housse hivernage','Ventilation intérieure (ouverture aérations + déshumidificateur)','Débranchement électronique sensible (GPS, VHF, AIS)','Vidange et nettoyage réservoir eaux noires','Contrôle et charge extincteurs','Nettoyage et traitement teck / surfaces extérieures','Inventaire pièces détachées à commander pour remise en service','Rapport photographique état général avant hivernage'];
+      const sail=['Inspection et rangement voiles (grand-voile, génois, spi)','Graissage winches et accastillage de pont','Rinçage et lubrification enrouleurs'];
+      const motor=['Vidange et hivernage groupe électrogène','Hivernage climatisation (vidange, nettoyage filtres)','Vidange hydraulique (stabilisateurs, passerelle)','Nettoyage et protection gelcoat coque'];
+      const items=isMotor?[...base,...motor]:[...base,...sail];
+      const checklist=items.map((t,i)=>({id:i+1,text:t,done:false}));
+      state.maint.push({id:Math.max(0,...state.maint.map(m=>m.id))+1,nId:v.id,compId:null,cat:'Coque & antifouling',titre:'Checklist hivernage '+v.nom,prio:'Haute',statut:'Planifiée',echeance:new Date(new Date().getFullYear(),10,1).toISOString().split('T')[0],dateFin:null,dateRealisation:null,freq:365,cout:isMotor?5000:3500,coutReel:null,assigneA:null,desc:'Procédure complète de mise en hivernage',justif:'En attente',workflow:[{step:'Demandée',par:'Système',date:new Date().toISOString().split('T')[0]}],photos:[],recurrence:'annuelle',parentId:null,checklist:checklist,factures:[]});
+      added=true;
+    }
+  });
+  if(added){try{const d={};['vessels','equipage','composants','maint','couts','inventaire','journal','documents','charters','apaDep','revenus','reglementaire'].forEach(k=>d[k]=state[k]);localStorage.setItem('gmao-yacht-data',JSON.stringify(d))}catch(e){}}
+})();
+const gv=id=>state.vessels.find(v=>v.id===id);
+const ge=id=>state.equipage.find(e=>e.id===id);
+const CATS_M=['Moteur principal','Moteur auxiliaire','Coque & antifouling','Gréement & voiles','Électronique & navigation','Sécurité & sauvetage','Plomberie & dessalinisateur','Climatisation','Électricité & batteries','Hydraulique','Intérieur','Autre'];
+const PRIOS=['Critique','Haute','Moyenne','Basse'];
+const WF_STEPS=['Demandée','Approuvée','En cours','Réalisée','Validée'];
+const CATS_C=['Maintenance','Carburant','Assurance','Place de port','Équipage','Pièces détachées','Carénage','Administratif','Autre'];
+const JUSTIFS=['Justifié','En attente','Manquant'];
+const FAMILLES=['Propulsion','Coque & Structure','Gréement & Voiles','Électricité & Batteries','Électronique & Navigation','Plomberie & Eau','Sécurité & Sauvetage','Climatisation & Ventilation','Intérieur & Confort','Pont & Accastillage'];
+
+// ─── DASHBOARD ───
+function pgDashboard(){
+  const sec=S('div',{className:'section'});
+  sec.appendChild(S('div',null,S('h1',{style:{fontSize:'22px',fontWeight:700}},'Tableau de bord'),S('p',{style:{fontSize:'12px',color:'#64748b',marginTop:'4px'}},'Vue d\'ensemble — '+fD(new Date().toISOString().split('T')[0]))));
+  const totalC=state.couts.reduce((s,c)=>s+c.montant,0);const totalR=state.revenus.reduce((s,r)=>s+r.montant,0);
+  const retard=state.maint.filter(m=>m.statut==='En retard').length;const prochain=state.maint.filter(m=>m.statut==='Planifiée'&&jR(m.echeance)<=30&&jR(m.echeance)>0).length;
+  const alerteP=state.inventaire.filter(p=>p.qte<=p.seuil).length;const justifManq=state.couts.filter(c=>c.justif==='Manquant').length;
+  const stats=S('div',{className:'stats'});
+  const reglNonConf=state.reglementaire.filter(r=>r.statut==='Non conforme'||(r.echeance&&r.echeance<today())).length;
+  const reglTotal=state.reglementaire.length;
+  const apaAlerts=[];state.charters.filter(ch=>ch.statut==='Confirmé'&&ch.apa>0).forEach(ch=>{const spent=state.apaDep.filter(d=>d.charterId===ch.id).reduce((s,d)=>s+d.montant,0);const pct=Math.round(spent/ch.apa*100);if(pct>=80)apaAlerts.push(pct)});
+  [{ic:'shield',lb:'Réglementaire',val:reglNonConf?reglNonConf+' alerte'+(reglNonConf>1?'s':''):'Conforme',sub:reglTotal+' documents suivis',bg:reglNonConf?'#fee2e2':'#d1fae5',fg:reglNonConf?'#dc2626':'#059669',pg:'reglementaire'},
+   {ic:'alert',lb:'Maintenance',val:retard+' en retard',sub:prochain+' dans 30j',bg:'#fee2e2',fg:'#dc2626',pg:'maintenance'},
+   {ic:'anchor',lb:'APA Charter',val:apaAlerts.length?apaAlerts.length+' charter'+(apaAlerts.length>1?'s':'')+' > 80%':'APA OK',sub:state.charters.filter(ch=>ch.statut==='Confirmé').length+' charter(s) actif(s)',bg:apaAlerts.length?'#ffedd5':'#d1fae5',fg:apaAlerts.length?'#ea580c':'#059669',pg:'charter'},
+   {ic:'file',lb:'Justificatifs',val:justifManq+' manquant'+(justifManq>1?'s':''),sub:alerteP+' pièces en alerte',bg:'#ffedd5',fg:'#ea580c',pg:'couts'},
+  ].forEach(s=>{const c=S('div',{className:'stat',style:{cursor:'pointer',transition:'box-shadow .15s'},onClick:()=>setState({page:s.pg})});c.addEventListener('mouseenter',()=>c.style.boxShadow='0 4px 12px rgba(0,0,0,.08)');c.addEventListener('mouseleave',()=>c.style.boxShadow='none');const ic=S('div',{className:'stat-icon',style:{background:s.bg,color:s.fg}});ic.appendChild(icon(s.ic,18));c.appendChild(ic);c.appendChild(S('div',{className:'stat-val'},String(s.val)));c.appendChild(S('div',{className:'stat-label'},s.lb));c.appendChild(S('div',{className:'stat-sub'},s.sub));stats.appendChild(c)});
+  sec.appendChild(stats);
+  // Charts
+  const row=S('div',{className:'g3'});
+  // Pie
+  const catMap={};state.couts.forEach(c=>{catMap[c.cat]=(catMap[c.cat]||0)+c.montant});
+  const pieData=Object.entries(catMap).map(([name,value])=>({name,value}));
+  const pieCard=S('div',{className:'card',style:{padding:'16px'}});pieCard.appendChild(S('h3',{style:{fontSize:'14px',fontWeight:600,marginBottom:'12px'}},'Répartition coûts'));pieCard.appendChild(makePie(pieData));row.appendChild(pieCard);
+  // Bar
+  const barData=allowedVessels().map(v=>({name:v.nom,value:state.couts.filter(c=>c.nId===v.id).reduce((s,c)=>s+c.montant,0)}));
+  const barCard=S('div',{className:'card',style:{padding:'16px'}});barCard.appendChild(S('h3',{style:{fontSize:'14px',fontWeight:600,marginBottom:'12px'}},'Coûts par navire'));barCard.appendChild(makeBar(barData,()=>'#0ea5e9'));row.appendChild(barCard);
+  // Rentabilité
+  const rentCard=S('div',{className:'card',style:{padding:'16px'}});rentCard.appendChild(S('h3',{style:{fontSize:'14px',fontWeight:600,marginBottom:'12px'}},'Rentabilité par navire'));
+  const rentData=allowedVessels().map(v=>{const dep=state.couts.filter(c=>c.nId===v.id).reduce((s,c)=>s+c.montant,0);const rev=state.revenus.filter(r=>r.nId===v.id).reduce((s,r)=>s+r.montant,0);return{name:v.nom,dep,rev,profit:rev-dep}});
+  // Table-style layout
+  const tbl=S('div',{style:{display:'grid',gridTemplateColumns:'1fr auto auto auto',gap:'0',fontSize:'12px'}});
+  // Header
+  [' ','Dépenses','Revenus','Résultat'].forEach((h,i)=>{
+    tbl.appendChild(S('div',{style:{padding:'6px 10px',fontSize:'10px',fontWeight:600,color:'#94a3b8',textTransform:'uppercase',letterSpacing:'.4px',textAlign:i>0?'right':'left',borderBottom:'1px solid #e2e8f0'}},h));
+  });
+  rentData.forEach(r=>{
+    tbl.appendChild(S('div',{style:{padding:'10px 10px',fontWeight:500,fontSize:'13px',borderBottom:'1px solid #f1f5f9'}},r.name));
+    tbl.appendChild(S('div',{style:{padding:'10px 10px',textAlign:'right',color:'#dc2626',fontVariantNumeric:'tabular-nums',borderBottom:'1px solid #f1f5f9'}},'↓ '+fE(r.dep)));
+    tbl.appendChild(S('div',{style:{padding:'10px 10px',textAlign:'right',color:'#059669',fontVariantNumeric:'tabular-nums',borderBottom:'1px solid #f1f5f9'}},'↑ '+fE(r.rev)));
+    tbl.appendChild(S('div',{style:{padding:'10px 10px',textAlign:'right',fontWeight:700,fontVariantNumeric:'tabular-nums',color:r.profit>=0?'#059669':'#dc2626',borderBottom:'1px solid #f1f5f9'}},(r.profit>=0?'+':'')+fE(r.profit)));
+  });
+  rentCard.appendChild(tbl);
+  row.appendChild(rentCard);
+  sec.appendChild(row);
+  // Upcoming tasks
+  const taskCard=S('div',{className:'card',style:{padding:'16px'}});taskCard.appendChild(S('h3',{style:{fontSize:'14px',fontWeight:600,marginBottom:'12px'}},'Prochaines interventions'));
+  state.maint.filter(m=>m.statut!=='Réalisée'&&m.statut!=='Validée').sort((a,b)=>new Date(a.echeance)-new Date(b.echeance)).slice(0,6).forEach(t=>{
+    const v=gv(t.nId);const j=jR(t.echeance);const crew=ge(t.assigneA);
+    const bc=t.statut==='En retard'?'red':j<=7?'orange':j<=30?'yellow':'blue';
+    taskCard.appendChild(S('div',{style:{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderRadius:'8px',background:'#f8fafc',marginBottom:'6px',cursor:'pointer',fontSize:'12px'},onClick:()=>setState({page:'maintenance'})},
+      S('div',{style:{flex:1,minWidth:0}},S('div',{style:{fontWeight:500}},t.titre),S('div',{style:{fontSize:'10px',color:'#94a3b8'}},(v?v.nom:'')+' • '+(crew?crew.nom:'Non assigné'))),
+      badge(t.statut==='En retard'?Math.abs(j)+'j retard':j+'j',bc)
+    ));
+  });
+  sec.appendChild(taskCard);
+  return sec;
+}
+
+// ─── FLOTTE + ÉQUIPAGE ───
+function pgFlotte(){
+  const sec=S('div',{className:'section'});
+  sec.appendChild(S('div',{className:'flex-b'},S('div',null,S('h1',{style:{fontSize:'22px',fontWeight:700}},'Flotte & Équipage')),S('button',{className:'btn btn-p',onClick:()=>openModal('addV',{nom:'',type:'moteur',longueur:'',annee:'',port:'',immat:'',statut:'actif',carenage:'',heures:0,img:'🚤'})},icon('plus',14),' Navire')));
+  const grid=S('div',{className:'g3'});
+  const allowedIds=state.currentUser?state.currentUser.vesselIds:state.vessels.map(v=>v.id);
+  state.vessels.filter(v=>allowedIds.includes(v.id)).forEach(v=>{
+    const crew=state.equipage.filter(e=>e.nId===v.id&&e.actif);const vm=state.maint.filter(m=>m.nId===v.id&&m.statut!=='Réalisée'&&m.statut!=='Validée');const vc=state.couts.filter(c=>c.nId===v.id).reduce((s,c)=>s+c.montant,0);
+    const card=S('div',{className:'card',style:{overflow:'hidden'}});
+    const hdrEl=S('div',{style:{background:'linear-gradient(135deg,#eff6ff,#ecfeff)',padding:'16px',display:'flex',alignItems:'center',gap:'12px'}});
+    if(v.photo){
+      hdrEl.appendChild(S('img',{src:v.photo,style:{width:'56px',height:'56px',borderRadius:'10px',objectFit:'cover',border:'2px solid #fff',boxShadow:'0 2px 8px rgba(0,0,0,.1)'}}));
+    }else{
+      hdrEl.appendChild(S('span',{style:{fontSize:'40px'}},v.img));
+    }
+    hdrEl.appendChild(S('div',null,S('h3',{style:{fontSize:'16px',fontWeight:700}},v.nom),S('p',{style:{fontSize:'12px',color:'#475569',margin:'2px 0'}},(v.type==='moteur'?'Moteur':'Voilier')+' — '+v.longueur+'m'),badge(v.statut,v.statut==='actif'?'green':'orange')));
+    card.appendChild(hdrEl);
+    const body=S('div',{style:{padding:'14px'}});
+    body.appendChild(S('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px',fontSize:'12px'}},
+      S('div',null,S('span',{style:{color:'#64748b'}},'Port: '),S('span',{style:{fontWeight:500}},v.port)),
+      S('div',null,S('span',{style:{color:'#64748b'}},'Heures: '),S('span',{style:{fontWeight:500}},v.heures+'h')),
+      S('div',null,S('span',{style:{color:'#64748b'}},'Immat: '),S('span',{style:{fontWeight:500}},v.immat)),
+      v.mmsi?S('div',null,S('span',{style:{color:'#64748b'}},'MMSI: '),S('span',{style:{fontWeight:500}},v.mmsi)):null,
+      v.callSign?S('div',null,S('span',{style:{color:'#64748b'}},'Call Sign: '),S('span',{style:{fontWeight:500}},v.callSign)):null,
+      S('div',null,S('span',{style:{color:'#64748b'}},'Carénage: '),S('span',{style:{fontWeight:500,color:jR(v.carenage)<=60?'#ea580c':'#1e293b'}},fD(v.carenage)))
+    ));
+    // Crew section
+    body.appendChild(S('div',{style:{marginTop:'10px',paddingTop:'10px',borderTop:'1px solid #f1f5f9'}},
+      S('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'6px'}},
+        S('span',{style:{fontSize:'12px',fontWeight:600,color:'#475569'}},'Équipage ('+crew.length+')'),
+        S('button',{className:'btn btn-s btn-sm',onClick:()=>openModal('addCrew',{nId:v.id,nom:'',role:'',tel:'',email:'',actif:true,numMarin:'',numPasseport:'',permanent:true,dateDebut:'',dateFin:''})},icon('plus',12),' Ajouter')
+      )
+    ));
+    crew.forEach(c=>{
+      body.appendChild(S('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'4px 0',fontSize:'12px'}},
+        S('div',null,S('span',{style:{fontWeight:500}},c.nom),' ',S('span',{style:{color:'#64748b'}},'('+c.role+')'),(c.permanent===false&&c.dateFin)?' — '+c.dateFin:c.permanent!==false?' (permanent)':''),
+        S('div',{style:{display:'flex',gap:'2px'}},
+          S('button',{className:'icon-btn',style:{color:'#2563eb'},onClick:()=>openModal('editCrew',{...c})},icon('edit',14)),
+          S('button',{className:'icon-btn danger',style:{color:'#dc2626'},onClick:()=>{if(confirm('Supprimer cet équipier ?'))setState(s=>({equipage:s.equipage.filter(x=>x.id!==c.id)}))}},icon('trash',14))
+        )
+      ));
+    });
+    // Footer
+    body.appendChild(S('div',{style:{display:'flex',justifyContent:'flex-end',gap:'4px',marginTop:'8px',paddingTop:'8px',borderTop:'1px solid #f1f5f9'}},
+      S('button',{className:'icon-btn',style:{color:'#2563eb'},onClick:()=>openModal('editV',{...v})},icon('edit',14)),
+      S('button',{className:'icon-btn danger',style:{color:'#dc2626'},onClick:()=>{if(confirm('Supprimer ce navire ?'))setState(s=>({vessels:s.vessels.filter(x=>x.id!==v.id)}))}},icon('trash',14))
+    ));
+    card.appendChild(body);grid.appendChild(card);
+  });
+  sec.appendChild(grid);
+  // Modals
+  if(state.modal==='addV'||state.modal==='editV'){
+    sec.appendChild(renderModal(state.modal==='addV'?'Ajouter un navire':'Modifier',false,()=>{const ed=state.edit;const f=S('div',{className:'form-row'});
+      f.appendChild(makeInput('Nom',null,ed.nom,e=>setState(s=>({edit:{...s.edit,nom:e.target.value}}))));
+      f.appendChild(makeSelect('Type',['moteur','voile'],ed.type,e=>setState(s=>({edit:{...s.edit,type:e.target.value,img:e.target.value==='voile'?'⛵':'🚤'}}))));
+      f.appendChild(makeInput('Longueur (m)','number',ed.longueur,e=>setState(s=>({edit:{...s.edit,longueur:e.target.value}}))));
+      f.appendChild(makeInput('Année','number',ed.annee,e=>setState(s=>({edit:{...s.edit,annee:e.target.value}}))));
+      f.appendChild(makeInput('Port',null,ed.port,e=>setState(s=>({edit:{...s.edit,port:e.target.value}}))));
+      f.appendChild(makeInput('Immat.',null,ed.immat,e=>setState(s=>({edit:{...s.edit,immat:e.target.value}}))));
+      f.appendChild(makeInput('MMSI',null,ed.mmsi,e=>setState(s=>({edit:{...s.edit,mmsi:e.target.value}}))));
+      f.appendChild(makeInput('Call Sign',null,ed.callSign,e=>setState(s=>({edit:{...s.edit,callSign:e.target.value}}))));
+      f.appendChild(makeSelect('Statut',['actif','en maintenance','hivernage','à vendre'],ed.statut,e=>setState(s=>({edit:{...s.edit,statut:e.target.value}}))));
+      f.appendChild(makeInput('Carénage','date',ed.carenage,e=>setState(s=>({edit:{...s.edit,carenage:e.target.value}}))));
+      // Photo navire
+      const photoSec=S('div',{className:'form-full'});
+      photoSec.appendChild(S('label',{className:'form-label'},'Photo du navire'));
+      if(ed.photo){
+        const pWrap=S('div',{style:{display:'flex',alignItems:'center',gap:'10px'}});
+        pWrap.appendChild(S('img',{src:ed.photo,style:{width:'80px',height:'60px',borderRadius:'8px',objectFit:'cover'}}));
+        pWrap.appendChild(S('button',{className:'btn btn-d btn-sm',onClick:()=>setState(s=>({edit:{...s.edit,photo:''}}))},icon('trash',12),' Supprimer'));
+        photoSec.appendChild(pWrap);
+      }else{
+        const zone=S('div',{className:'photo-upload-zone',style:{width:'100%',height:'48px',flexDirection:'row',gap:'6px'}});
+        zone.appendChild(icon('upload',14));
+        zone.appendChild(S('span',{style:{fontSize:'11px'}},'Cliquer pour ajouter une photo'));
+        const inp=S('input',{type:'file',accept:'image/*',style:{display:'none'}});
+        inp.addEventListener('change',e=>{const f2=e.target.files[0];if(!f2||f2.size>5*1024*1024)return;const r=new FileReader();r.onload=ev=>setState(s=>({edit:{...s.edit,photo:ev.target.result}}));r.readAsDataURL(f2);});
+        zone.addEventListener('click',()=>inp.click());
+        zone.appendChild(inp);
+        photoSec.appendChild(zone);
+      }
+      f.appendChild(photoSec);
+      const btns=S('div',{className:'form-full',style:{display:'flex',justifyContent:'flex-end',gap:'8px',marginTop:'8px'}});
+      btns.appendChild(S('button',{className:'btn btn-s',onClick:closeModal},'Annuler'));
+      btns.appendChild(S('button',{className:'btn btn-p',onClick:()=>{const e=state.edit;if(!e.nom)return;if(state.modal==='addV')setState(s=>({vessels:[...s.vessels,{...e,id:nId(s.vessels),longueur:+e.longueur,annee:+e.annee,heures:+e.heures}],modal:null,edit:null}));else setState(s=>({vessels:s.vessels.map(v=>v.id===e.id?{...e,longueur:+e.longueur,annee:+e.annee,heures:+e.heures}:v),modal:null,edit:null}))}},icon('save',14),' Enregistrer'));
+      f.appendChild(btns);return f}));
+  }
+  if(state.modal==='addCrew'||state.modal==='editCrew'){
+    sec.appendChild(renderModal(state.modal==='addCrew'?'Ajouter un membre':'Modifier',false,()=>{const ed=state.edit;const f=S('div',{className:'form-row'});
+      f.appendChild(makeInput('Nom',null,ed.nom,e=>setState(s=>({edit:{...s.edit,nom:e.target.value}}))));
+      f.appendChild(makeSelect('Rôle',['Capitaine','Second','Mécanicien','Matelot','Hôtesse','Chef','Steward'],ed.role,e=>setState(s=>({edit:{...s.edit,role:e.target.value}}))));
+      f.appendChild(makeInput('Téléphone',null,ed.tel,e=>setState(s=>({edit:{...s.edit,tel:e.target.value}}))));
+      f.appendChild(makeInput('Email',null,ed.email,e=>setState(s=>({edit:{...s.edit,email:e.target.value}}))));
+      f.appendChild(makeInput('N° Marin',null,ed.numMarin,e=>setState(s=>({edit:{...s.edit,numMarin:e.target.value}}))));
+      f.appendChild(makeInput('N° Passeport',null,ed.numPasseport,e=>setState(s=>({edit:{...s.edit,numPasseport:e.target.value}}))));
+      const permDiv=S('div',{className:'form-group'});
+      permDiv.appendChild(S('label',{style:{display:'flex',alignItems:'center',gap:'6px'}},S('input',{type:'checkbox',checked:ed.permanent,onchange:e=>setState(s=>({edit:{...s.edit,permanent:e.target.checked}}))}), 'Permanent'));
+      f.appendChild(permDiv);
+      if(!ed.permanent){
+        const datesDiv=S('div',{className:'form-group',style:{display:'flex',flexDirection:'column',gap:'8px'}});
+        const d1=makeInput('Date début contrat','date',ed.dateDebut,e=>setState(s=>({edit:{...s.edit,dateDebut:e.target.value}})));
+        const d2=makeInput('Date fin contrat','date',ed.dateFin,e=>setState(s=>({edit:{...s.edit,dateFin:e.target.value}})));
+        datesDiv.appendChild(d1);datesDiv.appendChild(d2);
+        f.appendChild(datesDiv);
+      }
+      const btns=S('div',{className:'form-full',style:{display:'flex',justifyContent:'flex-end',gap:'8px',marginTop:'8px'}});
+      btns.appendChild(S('button',{className:'btn btn-s',onClick:closeModal},'Annuler'));
+      btns.appendChild(S('button',{className:'btn btn-p',onClick:()=>{const e=state.edit;if(!e.nom)return;if(state.modal==='addCrew')setState(s=>({equipage:[...s.equipage,{...e,id:nId(s.equipage)}],modal:null,edit:null}));else setState(s=>({equipage:s.equipage.map(c=>c.id===e.id?e:c),modal:null,edit:null}))}},icon('save',14),' Enregistrer'));
+      f.appendChild(btns);return f}));
+  }
+  return sec;
+}
+
+// ─── COMPOSANTS ───
+function pgComposants(){
+  const sec=S('div',{className:'section'});
+  sec.appendChild(S('div',{className:'flex-b'},S('div',null,S('h1',{style:{fontSize:'22px',fontWeight:700}},'Composants & Carnet d\'entretien'),S('p',{style:{fontSize:'12px',color:'#64748b',marginTop:'2px'}},state.composants.length+' composants enregistrés')),
+    S('button',{className:'btn btn-p',onClick:()=>openModal('addComp',{nId:state.vessels[0]?.id,famille:'',sg:'',nom:'',marque:'',modele:'',serie:'',install:'',manuel:''})},icon('plus',14),' Composant')
+  ));
+  // Filter
+  const ns=S('select',{className:'sel',style:{width:'auto'},onChange:e=>setState({filterNav:e.target.value})});ns.appendChild(S('option',{value:''},'Tous les navires'));allowedVessels().forEach(v=>{const o=S('option',{value:v.id},v.nom);if(String(v.id)===state.filterNav)o.selected=true;ns.appendChild(o)});sec.appendChild(ns);
+  // Tree view per vessel
+  const vessels=state.filterNav?allowedVessels().filter(v=>v.id===+state.filterNav):allowedVessels();
+  vessels.forEach(v=>{
+    const vComps=state.composants.filter(c=>c.nId===v.id);
+    const families={};vComps.forEach(c=>{if(!families[c.famille])families[c.famille]=[];families[c.famille].push(c)});
+    const vCard=S('div',{className:'card',style:{padding:'16px',marginBottom:'12px'}});
+    vCard.appendChild(S('h3',{style:{fontSize:'15px',fontWeight:600,marginBottom:'10px'}},v.img+' '+v.nom+' — '+Object.keys(families).length+' familles, '+vComps.length+' composants'));
+    Object.entries(families).forEach(([fam,comps])=>{
+      const famDiv=S('div',{style:{marginBottom:'8px'}});
+      famDiv.appendChild(S('div',{className:'tree-family'},icon('chevDown',14),' '+fam+' ('+comps.length+')'));
+      comps.forEach(c=>{
+        const maintCount=state.maint.filter(m=>m.compId===c.id).length;
+        const item=S('div',{className:'tree-item',style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}});
+        item.appendChild(S('div',null,
+          S('div',{style:{fontWeight:500,fontSize:'13px'}},c.nom),
+          S('div',{style:{fontSize:'11px',color:'#64748b'}},c.marque+' '+c.modele+(c.serie?' • S/N: '+c.serie:'')),
+          c.manuel?S('div',{style:{fontSize:'10px',color:'#0ea5e9',marginTop:'2px'}},'📖 '+c.manuel):null,
+          c.photos&&c.photos.length?photoGallery(c.photos):null
+        ));
+        item.appendChild(S('div',{style:{display:'flex',alignItems:'center',gap:'6px',flexShrink:0}},
+          maintCount?S('span',{className:'tag'},icon('wrench',10),' '+maintCount):null,
+          S('button',{className:'icon-btn',style:{color:'#2563eb'},onClick:()=>openModal('editComp',{...c})},icon('edit',14)),
+          S('button',{className:'icon-btn danger',style:{color:'#dc2626'},onClick:()=>{if(confirm('Supprimer ce composant ?'))setState(s=>({composants:s.composants.filter(x=>x.id!==c.id)}))}},icon('trash',14))
+        ));
+        famDiv.appendChild(item);
+      });
+      vCard.appendChild(famDiv);
+    });
+    // Add button for this vessel
+    vCard.appendChild(S('button',{className:'btn btn-s btn-sm',style:{marginTop:'6px'},onClick:()=>openModal('addComp',{nId:v.id,famille:'',sg:'',nom:'',marque:'',modele:'',serie:'',install:'',manuel:'',photos:[]})},icon('plus',12),' Ajouter un composant à '+v.nom));
+    sec.appendChild(vCard);
+  });
+  // Modal
+  if(state.modal==='addComp'||state.modal==='editComp'){
+    sec.appendChild(renderModal(state.modal==='addComp'?'Ajouter un composant':'Modifier',true,()=>{const ed=state.edit;const f=S('div',{className:'form-row'});
+      f.appendChild(makeVesselSel(ed.nId,e=>setState(s=>({edit:{...s.edit,nId:+e.target.value}}))));
+      f.appendChild(makeSelect('Famille',FAMILLES,ed.famille,e=>setState(s=>({edit:{...s.edit,famille:e.target.value}}))));
+      f.appendChild(makeInput('Sous-groupe',null,ed.sg,e=>setState(s=>({edit:{...s.edit,sg:e.target.value}}))));
+      f.appendChild(makeInput('Nom',null,ed.nom,e=>setState(s=>({edit:{...s.edit,nom:e.target.value}}))));
+      f.appendChild(makeInput('Marque',null,ed.marque,e=>setState(s=>({edit:{...s.edit,marque:e.target.value}}))));
+      f.appendChild(makeInput('Modèle',null,ed.modele,e=>setState(s=>({edit:{...s.edit,modele:e.target.value}}))));
+      f.appendChild(makeInput('N° série',null,ed.serie,e=>setState(s=>({edit:{...s.edit,serie:e.target.value}}))));
+      f.appendChild(makeInput('Date install.','date',ed.install,e=>setState(s=>({edit:{...s.edit,install:e.target.value}}))));
+      const mw=makeInput('Manuel / Notes techniques',null,ed.manuel,e=>setState(s=>({edit:{...s.edit,manuel:e.target.value}})),{textarea:true});mw.className='form-full';f.appendChild(mw);
+      const pw=S('div',{className:'form-full'});pw.appendChild(S('label',{className:'form-label'},'Photos'));pw.appendChild(photoUpload(ed.photos||[],src=>setState(s=>({edit:{...s.edit,photos:[...(s.edit.photos||[]),src]}})),i=>setState(s=>{const p=[...(s.edit.photos||[])];p.splice(i,1);return{edit:{...s.edit,photos:p}}})));f.appendChild(pw);
+      const btns=S('div',{className:'form-full',style:{display:'flex',justifyContent:'flex-end',gap:'8px',marginTop:'8px'}});
+      btns.appendChild(S('button',{className:'btn btn-s',onClick:closeModal},'Annuler'));
+      btns.appendChild(S('button',{className:'btn btn-p',onClick:()=>{const e=state.edit;if(!e.nom)return;if(state.modal==='addComp')setState(s=>({composants:[...s.composants,{...e,id:nId(s.composants),nId:+e.nId}],modal:null,edit:null}));else setState(s=>({composants:s.composants.map(c=>c.id===e.id?{...e,nId:+e.nId}:c),modal:null,edit:null}))}},icon('save',14),' Enregistrer'));
+      f.appendChild(btns);return f}));
+  }
+  return sec;
+}
+
+// ─── Part 7: Maintenance (enhanced with workflow, crew assignment, component link) ───
+function wfBar(steps){
+  const wrap=S('div',{className:'maint-wf'});
+  const bar=S('div',{className:'maint-wf-bar'});
+  const labels=S('div',{className:'maint-wf-labels'});
+  const doneSteps=steps.map(s=>s.step);
+  const lastDone=doneSteps.length?doneSteps[doneSteps.length-1]:null;
+  WF_STEPS.forEach(ws=>{
+    const step=steps.find(s=>s.step===ws);
+    const isCurrent=ws===lastDone;
+    let cls='maint-wf-step';
+    if(step)cls+=' done';
+    if(isCurrent)cls+=' current';
+    const el=S('div',{className:cls});
+    if(step){el.title=step.date+(step.par?' par '+step.par:'');}
+    bar.appendChild(el);
+    let lCls='maint-wf-label';
+    if(step)lCls+=' done';
+    if(isCurrent)lCls+=' current';
+    labels.appendChild(S('div',{className:lCls},ws));
+  });
+  wrap.appendChild(bar);
+  wrap.appendChild(labels);
+  return wrap;
+}
+function getHivernageChecklist(vesselNom){
+  const isMotor=vesselNom.toLowerCase().includes('sunreef')||vesselNom.toLowerCase().includes('power')||vesselNom.toLowerCase().includes('moteur');
+  const base=[
+    'Vidange moteurs + remplacement antigel',
+    'Rinçage complet circuits eau de mer',
+    'Vidange circuit eau douce + ajout antigel sanitaire',
+    'Vérification et graissage vannes de coque',
+    'Fermeture vannes de coque et passes-coques',
+    'Débranchement et stockage batteries (contrôle tension)',
+    'Rinçage et séchage réservoirs carburant',
+    'Nettoyage fond de cale + traitement anti-moisissure',
+    'Vérification amarres et défenses',
+    'Bâchage / pose housse hivernage',
+    'Ventilation intérieure (ouverture aérations + déshumidificateur)',
+    'Débranchement électronique sensible (GPS, VHF, AIS)',
+    'Vidange et nettoyage réservoir eaux noires',
+    'Contrôle et charge extincteurs',
+    'Nettoyage et traitement teck / surfaces extérieures',
+    'Inventaire pièces détachées à commander pour remise en service',
+    'Rapport photographique état général avant hivernage'
+  ];
+  const sail=['Inspection et rangement voiles (grand-voile, génois, spi)','Graissage winches et accastillage de pont','Rinçage et lubrification enrouleurs'];
+  const motor=['Vidange et hivernage groupe électrogène','Hivernage climatisation (vidange, nettoyage filtres)','Vidange hydraulique (stabilisateurs, passerelle)','Nettoyage et protection gelcoat coque'];
+  const items=isMotor?[...base,...motor]:[...base,...sail];
+  return items.map((t,i)=>({id:i+1,text:t,done:false}));
+}
+function createHivernageTask(vesselId){
+  const v=state.vessels.find(x=>x.id===vesselId);if(!v)return;
+  const exists=state.maint.some(m=>m.nId===vesselId&&m.titre&&m.titre.toLowerCase().includes('hivernage'));
+  if(exists&&!confirm('Une tâche hivernage existe déjà pour ce navire. En créer une nouvelle ?'))return;
+  const isMotor=v.nom.toLowerCase().includes('sunreef')||v.nom.toLowerCase().includes('power');
+  const newTask={id:nId(state.maint),nId:vesselId,compId:null,cat:'Coque & antifouling',titre:'Checklist hivernage '+v.nom,prio:'Haute',statut:'Planifiée',echeance:new Date(new Date().getFullYear(),10,1).toISOString().split('T')[0],dateFin:null,dateRealisation:null,freq:365,cout:isMotor?5000:3500,coutReel:null,assigneA:null,desc:'Procédure complète de mise en hivernage',justif:'En attente',workflow:[{step:'Demandée',par:state.currentUser?state.currentUser.nom:'',date:today()}],photos:[],recurrence:'annuelle',parentId:null,checklist:getHivernageChecklist(v.nom),factures:[]};
+  setState(s=>({maint:[...s.maint,newTask]}));
+}
+function pgMaint(){
+  const sec=S('div',{className:'page'});
+  sec.appendChild(S('div',{className:'page-head'},
+    S('h2',{},'🔧 Maintenance'),
+    S('div',{style:{display:'flex',gap:'8px',alignItems:'center'}},
+      makeVesselFilter(),
+      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addMaint',{nId:state.vessels[0]?.id||1,titre:'',desc:'',cat:'Préventive',prio:'Normale',statut:'Planifiée',echeance:'',dateRealisation:'',compId:'',assigneA:'',justif:'En attente',workflow:[],cout:0,photos:[],recurrence:'aucune',checklist:[],factures:[],parentId:null})},icon('plus',14),' Nouvelle intervention')
+    )
+  ));
+  // Stats
+  const fm=filterByVessel(state.maint);
+  const plans=fm.filter(m=>m.statut==='Planifiée').length;
+  const encours=fm.filter(m=>m.statut==='En cours').length;
+  const done=fm.filter(m=>m.statut==='Réalisée'||m.statut==='Validée').length;
+  const overdue=fm.filter(m=>m.echeance&&m.echeance<today()&&m.statut!=='Réalisée'&&m.statut!=='Validée').length;
+  const stats=S('div',{className:'stats'});
+  stats.appendChild(statCard('Planifiées',plans,'calendar','#3b82f6'));
+  stats.appendChild(statCard('En cours',encours,'wrench','#f59e0b'));
+  stats.appendChild(statCard('Réalisées',done,'check','#22c55e'));
+  stats.appendChild(statCard('En retard',overdue,'alert','#ef4444'));
+  sec.appendChild(stats);
+  // Export buttons
+  const expBar=S('div',{style:{display:'flex',gap:'8px',marginBottom:'12px'}});
+  expBar.appendChild(S('button',{className:'btn btn-s btn-sm',onClick:()=>exportCSV(fm,['id','titre','cat','prio','statut','echeance','dateRealisation','justif'],'maintenance.csv')},icon('download',12),' CSV'));
+  expBar.appendChild(S('button',{className:'btn btn-s btn-sm',onClick:()=>{
+    let h='<table border="1" cellpadding="4" style="border-collapse:collapse;font-size:12px"><tr><th>ID</th><th>Navire</th><th>Titre</th><th>Cat.</th><th>Priorité</th><th>Statut</th><th>Échéance</th><th>Justif.</th></tr>';
+    fm.forEach(m=>{const v=vesselName(m.nId);h+='<tr><td>'+m.id+'</td><td>'+v+'</td><td>'+esc(m.titre)+'</td><td>'+m.cat+'</td><td>'+m.prio+'</td><td>'+m.statut+'</td><td>'+(m.echeance||'-')+'</td><td>'+m.justif+'</td></tr>';});
+    h+='</table>';exportPrint('Rapport Maintenance',h);
+  }},icon('printer',12),' PDF'));
+  sec.appendChild(expBar);
+  // Filters
+  const filterBar=S('div',{style:{display:'flex',gap:'8px',marginBottom:'12px',flexWrap:'wrap',alignItems:'center'}});
+  filterBar.appendChild(S('label',{style:{fontSize:'12px',fontWeight:600,color:'#475569'}},'Filtres:'));
+  // Temporal filter
+  const tempBtns=['Tous','En retard','Bientôt','> 3 mois'];
+  tempBtns.forEach(t=>{
+    const active=state.maintTemporalFilter===t;
+    filterBar.appendChild(S('button',{className:'btn'+(active?' btn-p':' btn-s')+' btn-sm',onClick:()=>setState({maintTemporalFilter:t})},t));
+  });
+  // Famille filter
+  const familles=new Set();state.composants.forEach(c=>{if(c.famille)familles.add(c.famille)});
+  const famSel=S('select',{className:'sel',style:{fontSize:'11px',padding:'4px 8px',maxWidth:'150px'},onChange:e=>setState({maintFamilleFilter:e.target.value})});
+  famSel.appendChild(S('option',{value:''},'Tous les groupes'));
+  Array.from(familles).sort().forEach(f=>famSel.appendChild(S('option',{value:f,selected:f===state.maintFamilleFilter},f)));
+  filterBar.appendChild(famSel);
+  sec.appendChild(filterBar);
+  // List
+  if(!fm.length){sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucune intervention.'));return sec;}
+  // Apply filters
+  let filtered=fm;
+  if(state.maintTemporalFilter==='En retard'){
+    filtered=filtered.filter(m=>m.echeance&&m.echeance<today()&&m.statut!=='Réalisée'&&m.statut!=='Validée');
+  }else if(state.maintTemporalFilter==='Bientôt'){
+    filtered=filtered.filter(m=>m.echeance&&jR(m.echeance)>=0&&jR(m.echeance)<=90&&m.statut!=='Réalisée'&&m.statut!=='Validée');
+  }else if(state.maintTemporalFilter==='> 3 mois'){
+    filtered=filtered.filter(m=>m.echeance&&jR(m.echeance)>90&&m.statut!=='Réalisée'&&m.statut!=='Validée');
+  }
+  if(state.maintFamilleFilter){
+    const family=state.maintFamilleFilter;
+    filtered=filtered.filter(m=>!m.compId||state.composants.find(c=>c.id===m.compId)?.famille===family);
+  }
+  const SECU_CATS=['Sécurité & sauvetage','Réglementaire'];
+  const fmSecu=filtered.filter(m=>SECU_CATS.includes(m.cat));
+  const fmGen=filtered.filter(m=>!SECU_CATS.includes(m.cat));
+  function renderMaintCards(items,title,titleIcon){
+    if(!items.length)return;
+    sec.appendChild(S('h3',{style:{fontSize:'15px',fontWeight:700,margin:'16px 0 10px',display:'flex',alignItems:'center',gap:'8px'}},titleIcon,title+' ('+items.length+')'));
+    items.sort((a,b)=>(a.echeance||'9').localeCompare(b.echeance||'9'));
+    items.forEach(m=>{
+    const card=S('div',{className:'maint-card',style:{marginBottom:'10px'}});
+    const compName=m.compId?state.composants.find(c=>c.id===m.compId)?.nom:'';
+    const assignee=m.assigneA?state.equipage.find(c=>c.id===m.assigneA)?.nom:'';
+    const isOverdue=m.echeance&&m.echeance<today()&&m.statut!=='Réalisée'&&m.statut!=='Validée';
+    // Priority stripe + header
+    const header=S('div',{className:'maint-card-header'});
+    const prioCls='maint-prio prio-'+m.prio.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    header.appendChild(S('div',{className:prioCls}));
+    // Left content
+    const left=S('div',{style:{flex:1,minWidth:0}});
+    left.appendChild(S('div',{className:'maint-card-title'},m.titre));
+    const meta=S('div',{className:'maint-card-meta'});
+    meta.appendChild(S('span',{},vesselName(m.nId)));
+    if(compName){meta.appendChild(S('span',{className:'sep'}));meta.appendChild(S('span',{},compName));}
+    if(assignee){meta.appendChild(S('span',{className:'sep'}));meta.appendChild(S('span',{},'👤 '+assignee));}
+    left.appendChild(meta);
+    header.appendChild(left);
+    // Right badges + actions
+    const right=S('div',{className:'maint-card-badges'});
+    const jCls=m.justif==='Justifié'?'tag-ok':m.justif==='Manquant'?'tag-warn':'tag-pending';
+    right.appendChild(S('span',{className:'tag '+jCls},m.justif));
+    const sCls=m.statut==='Réalisée'||m.statut==='Validée'?'tag-ok':m.statut==='En cours'?'tag-pending':isOverdue?'tag-warn':'';
+    right.appendChild(S('span',{className:'tag '+sCls},isOverdue?'En retard':m.statut));
+    // Temporal status badge (only if not done)
+    if(m.statut!=='Réalisée'&&m.statut!=='Validée'&&m.echeance){
+      const daysLeft=jR(m.echeance);
+      let tBadge='';let tColor='green';
+      if(daysLeft<0){tBadge='En retard';tColor='red'}else if(daysLeft<=90){tBadge='Bientôt (< 3 mois)';tColor='orange'}else{tBadge='Planifié (> 3 mois)';tColor='green'}
+      const tCls=tColor==='red'?'b-red':tColor==='orange'?'b-orange':'b-green';
+      right.appendChild(S('span',{className:'badge '+tCls},tBadge));
+    }
+    // Invoice total
+    if(m.factures&&m.factures.length){
+      const totalFact=m.factures.reduce((s,f)=>s+(f.montant||0),0);
+      right.appendChild(S('span',{style:{fontSize:'11px',fontWeight:600,color:'#059669'}},'Devis: '+fmt(totalFact)));
+      const nbPJ=m.factures.filter(f=>f.fichier).length;
+      if(nbPJ)right.appendChild(S('span',{style:{fontSize:'10px',color:'#64748b'}},'📎 '+nbPJ+' pièce'+(nbPJ>1?'s':'')));
+    }
+    const acts=S('div',{className:'maint-card-actions'});
+    acts.appendChild(S('button',{className:'icon-btn',onClick:()=>openModal('editMaint',{...m})},icon('edit',14)));
+    acts.appendChild(S('button',{className:'icon-btn danger',onClick:()=>{if(confirm('Supprimer cette intervention ?'))setState(s=>({maint:s.maint.filter(x=>x.id!==m.id)}))}},icon('trash',14)));
+    right.appendChild(acts);
+    header.appendChild(right);
+    card.appendChild(header);
+    // Detail line
+    const detail=S('div',{className:'maint-card-body'});
+    const detLine=S('div',{className:'maint-card-detail'});
+    detLine.appendChild(S('span',{},m.cat));
+    detLine.appendChild(S('span',{style:{color:'#cbd5e1'}},'·'));
+    detLine.appendChild(S('span',{},m.prio));
+    if(m.echeance){detLine.appendChild(S('span',{style:{color:'#cbd5e1'}},'·'));detLine.appendChild(S('span',{style:isOverdue?{color:'#ef4444',fontWeight:600}:{}},'Échéance: '+fD(m.echeance)));}
+    if(m.dateRealisation){detLine.appendChild(S('span',{style:{color:'#cbd5e1'}},'·'));detLine.appendChild(S('span',{style:{color:'#059669'}},'Réalisé: '+fD(m.dateRealisation)));}
+    if(m.cout){detLine.appendChild(S('span',{style:{color:'#cbd5e1'}},'·'));detLine.appendChild(S('span',{style:{fontWeight:500}},fmt(m.cout)));}
+    detail.appendChild(detLine);
+    // Checklist progress
+    if(m.checklist&&m.checklist.length){
+      const chkDone=(m.checklist||[]).filter(c=>c.done).length;
+      const chkTotal=m.checklist.length;
+      const chkRow=S('div',{style:{display:'flex',alignItems:'center',gap:'8px',marginTop:'8px',fontSize:'11px',color:'#64748b'}});
+      chkRow.appendChild(S('span',{},(chkDone)+'/'+chkTotal+' étapes'));
+      const progBar=S('div',{style:{flex:1,height:'4px',background:'#e2e8f0',borderRadius:'2px',overflow:'hidden'}});
+      progBar.appendChild(S('div',{style:{height:'100%',width:((chkDone/chkTotal)*100)+'%',background:'#3b82f6',transition:'width .3s'}}));
+      chkRow.appendChild(progBar);
+      detail.appendChild(chkRow);
+    }
+    // Description
+    if(m.desc)detail.appendChild(S('div',{className:'maint-card-desc'},m.desc));
+    // Photos
+    if(m.photos&&m.photos.length)detail.appendChild(photoGallery(m.photos));
+    card.appendChild(detail);
+    // Workflow bar
+    if(m.workflow&&m.workflow.length)card.appendChild(wfBar(m.workflow));
+    sec.appendChild(card);
+    });
+  }
+  renderMaintCards(fmSecu,'Maintenance Sécurité','🛡️');
+  renderMaintCards(fmGen,'Maintenance Générale','🔧');
+  // Modal
+  if(state.modal==='addMaint'||state.modal==='editMaint'){
+    sec.appendChild(renderModal(state.modal==='addMaint'?'Nouvelle intervention':'Modifier',true,()=>{
+      const ed=state.edit;const f=S('div',{className:'form-row'});
+      f.appendChild(makeVesselSel(ed.nId,e=>setState(s=>({edit:{...s.edit,nId:+e.target.value}}))));
+      f.appendChild(makeInput('Titre',null,ed.titre,e=>setState(s=>({edit:{...s.edit,titre:e.target.value}}))));
+      f.appendChild(makeSelect('Catégorie',['Préventive','Corrective','Réglementaire','Amélioration'],ed.cat,e=>setState(s=>({edit:{...s.edit,cat:e.target.value}}))));
+      f.appendChild(makeSelect('Priorité',['Basse','Normale','Haute','Urgente'],ed.prio,e=>setState(s=>({edit:{...s.edit,prio:e.target.value}}))));
+      f.appendChild(makeSelect('Statut',['Planifiée','En cours','Réalisée','Validée'],ed.statut,e=>{const newStatut=e.target.value;const updates={statut:newStatut};if(newStatut==='Réalisée'&&!ed.dateRealisation)updates.dateRealisation=today();setState(s=>({edit:{...s.edit,...updates}}))}));
+      f.appendChild(makeInput('Échéance','date',ed.echeance,e=>setState(s=>({edit:{...s.edit,echeance:e.target.value}}))));
+      const drGroup=S('div',{className:'form-group'});drGroup.appendChild(S('label',{},'Date de réalisation'));const drInput=S('input',{type:'date',className:'input',value:ed.dateRealisation||'',style:{background:ed.dateRealisation?'#f0fdf4':'#fff'},onInput:e=>setState(s=>({edit:{...s.edit,dateRealisation:e.target.value}}))});drGroup.appendChild(drInput);if(!ed.dateRealisation)drGroup.appendChild(S('span',{style:{fontSize:'10px',color:'#94a3b8',marginTop:'2px'}},'Rempli auto au passage en Réalisée'));f.appendChild(drGroup);
+      // Component select
+      const vComps=state.composants.filter(c=>c.nId===+ed.nId);
+      const compOpts=vComps.map(c=>c.nom);
+      const compW=S('div',{className:'form-group'});compW.appendChild(S('label',{},'Composant'));
+      const compSel=S('select',{value:ed.compId||'',onchange:e=>setState(s=>({edit:{...s.edit,compId:e.target.value?+e.target.value:''}}))});
+      compSel.appendChild(S('option',{value:''},'— Aucun —'));
+      vComps.forEach(c=>compSel.appendChild(S('option',{value:c.id,selected:c.id===ed.compId},c.nom)));
+      compW.appendChild(compSel);f.appendChild(compW);
+      // Crew assignment
+      f.appendChild(makeCrewSel(+ed.nId,ed.assigneA,e=>setState(s=>({edit:{...s.edit,assigneA:e.target.value?+e.target.value:''}}))));
+      f.appendChild(makeSelect('Justificatif',JUSTIFS,ed.justif,e=>setState(s=>({edit:{...s.edit,justif:e.target.value}}))));
+      f.appendChild(makeInput('Coût (€)','number',ed.cout,e=>setState(s=>({edit:{...s.edit,cout:+e.target.value}}))));
+      f.appendChild(makeSelect('Récurrence',['aucune','mensuelle','trimestrielle','semestrielle','annuelle','2ans','3ans','5ans'],ed.recurrence||'aucune',e=>setState(s=>({edit:{...s.edit,recurrence:e.target.value}}))));
+      const descW=makeInput('Description',null,ed.desc,e=>setState(s=>({edit:{...s.edit,desc:e.target.value}})),{textarea:true});descW.className='form-full';f.appendChild(descW);
+      // Checklist section
+      const checkSec=S('div',{className:'form-full',style:{marginTop:'8px',padding:'8px',background:'#f8fafc',borderRadius:'6px'}});
+      checkSec.appendChild(S('div',{style:{fontWeight:600,fontSize:'13px',marginBottom:'6px'}},'Checklist'));
+      const checkList=ed.checklist||[];
+      const checkDisplay=S('div');
+      // Progress bar
+      const chkDoneCount=checkList.filter(c=>c.done).length;
+      if(checkList.length){
+        const pct=Math.round(chkDoneCount/checkList.length*100);
+        const progWrap=S('div',{style:{marginBottom:'8px'}});
+        progWrap.appendChild(S('div',{style:{fontSize:'11px',color:'#64748b',marginBottom:'3px'}},chkDoneCount+' / '+checkList.length+' étapes ('+pct+'%)'));
+        const bar=S('div',{style:{height:'6px',background:'#e2e8f0',borderRadius:'3px',overflow:'hidden'}});
+        bar.appendChild(S('div',{style:{height:'100%',width:pct+'%',background:pct===100?'#10b981':'#0ea5e9',transition:'width .2s'}}));
+        progWrap.appendChild(bar);
+        checkSec.appendChild(progWrap);
+      }
+      checkList.forEach((item,i)=>{
+        const row=S('div',{style:{display:'flex',gap:'6px',marginBottom:'4px',alignItems:'center'}});
+        row.appendChild(S('input',{type:'checkbox',checked:!!item.done,style:{cursor:'pointer',flexShrink:0},onchange:e=>setState(s=>({edit:{...s.edit,checklist:[...s.edit.checklist.slice(0,i),{...item,done:e.target.checked},...s.edit.checklist.slice(i+1)]}})) }));
+        row.appendChild(S('input',{type:'text',className:'input',style:{flex:1,fontSize:'12px',textDecoration:item.done?'line-through':'none',color:item.done?'#94a3b8':'#1e293b'},value:item.text||'',onchange:e=>setState(s=>({edit:{...s.edit,checklist:[...s.edit.checklist.slice(0,i),{...item,text:e.target.value},...s.edit.checklist.slice(i+1)]}})) }));
+        row.appendChild(S('button',{className:'icon-btn danger btn-sm',style:{padding:'2px'},onClick:()=>{if(confirm('Supprimer cette étape ?'))setState(s=>({edit:{...s.edit,checklist:s.edit.checklist.filter((_,idx)=>idx!==i)}}))}},icon('trash',12)));
+        checkDisplay.appendChild(row);
+      });
+      checkSec.appendChild(checkDisplay);
+      checkSec.appendChild(S('button',{className:'btn btn-s btn-sm',style:{marginTop:'4px'},onClick:()=>setState(s=>({edit:{...s.edit,checklist:[...(s.edit.checklist||[]),{text:'',done:false}]}}))},icon('plus',12),' Ajouter étape'));
+      f.appendChild(checkSec);
+      // Devis section
+      const factSec=S('div',{className:'form-full',style:{marginTop:'8px',padding:'8px',background:'#f8fafc',borderRadius:'6px'}});
+      factSec.appendChild(S('div',{style:{fontWeight:600,fontSize:'13px',marginBottom:'6px'}},'Devis'));
+      const factList=ed.factures||[];
+      const factDisplay=S('div');
+      factList.forEach((fi,i)=>{
+        const row=S('div',{style:{display:'flex',gap:'4px',marginBottom:'6px',padding:'6px',background:'#fff',borderRadius:'4px',flexWrap:'wrap'}});
+        const col1=S('div',{style:{flex:1,minWidth:'200px',display:'flex',flexDirection:'column',gap:'4px'}});
+        col1.appendChild(S('input',{type:'text',className:'input',style:{fontSize:'11px'},placeholder:'Nom du devis',value:fi.nom||'',onInput:e=>setState(s=>({edit:{...s.edit,factures:[...s.edit.factures.slice(0,i),{...fi,nom:e.target.value},...s.edit.factures.slice(i+1)]}})) }));
+        const row2=S('div',{style:{display:'flex',gap:'4px'}});
+        row2.appendChild(S('input',{type:'number',className:'input',style:{flex:1,fontSize:'11px'},placeholder:'Montant €',value:fi.montant||0,onInput:e=>setState(s=>({edit:{...s.edit,factures:[...s.edit.factures.slice(0,i),{...fi,montant:+e.target.value},...s.edit.factures.slice(i+1)]}})) }));
+        row2.appendChild(S('input',{type:'date',className:'input',style:{flex:1,fontSize:'11px'},value:fi.date||'',onInput:e=>setState(s=>({edit:{...s.edit,factures:[...s.edit.factures.slice(0,i),{...fi,date:e.target.value},...s.edit.factures.slice(i+1)]}})) }));
+        col1.appendChild(row2);
+        // File upload for devis
+        const fileRow=S('div',{style:{display:'flex',gap:'4px',alignItems:'center'}});
+        if(fi.fichier){
+          fileRow.appendChild(S('a',{href:fi.fichier,target:'_blank',download:fi.fichierNom||'devis',style:{fontSize:'11px',color:'#2563eb',textDecoration:'underline'}},fi.fichierNom||'Pièce jointe'));
+          fileRow.appendChild(S('button',{className:'icon-btn danger',style:{padding:'2px'},onClick:()=>setState(s=>({edit:{...s.edit,factures:[...s.edit.factures.slice(0,i),{...fi,fichier:'',fichierNom:''},...s.edit.factures.slice(i+1)]}}))},icon('x',12)));
+        } else {
+          const fileInp=S('input',{type:'file',accept:'image/*,.pdf,.doc,.docx,.xls,.xlsx',style:{fontSize:'11px',flex:1}});
+          fileInp.addEventListener('change',ev=>{
+            const file=ev.target.files[0];if(!file)return;
+            const reader=new FileReader();
+            reader.onload=re=>{
+              const isImg=file.type.startsWith('image/');
+              if(isImg){
+                compressImage(re.target.result,1200,900,0.7).then(compressed=>{
+                  setState(s=>({edit:{...s.edit,factures:[...s.edit.factures.slice(0,i),{...fi,fichier:compressed,fichierNom:file.name},...s.edit.factures.slice(i+1)]}}));
+                });
+              } else {
+                setState(s=>({edit:{...s.edit,factures:[...s.edit.factures.slice(0,i),{...fi,fichier:re.target.result,fichierNom:file.name},...s.edit.factures.slice(i+1)]}}));
+              }
+            };
+            reader.readAsDataURL(file);
+          });
+          fileRow.appendChild(fileInp);
+        }
+        col1.appendChild(fileRow);
+        row.appendChild(col1);
+        row.appendChild(S('button',{className:'icon-btn danger btn-sm',style:{padding:'2px',alignSelf:'flex-start'},onClick:()=>setState(s=>({edit:{...s.edit,factures:s.edit.factures.filter((_,idx)=>idx!==i)}}))},icon('trash',12)));
+        factDisplay.appendChild(row);
+      });
+      factSec.appendChild(factDisplay);
+      factSec.appendChild(S('button',{className:'btn btn-s btn-sm',style:{marginTop:'4px'},onClick:()=>setState(s=>({edit:{...s.edit,factures:[...(s.edit.factures||[]),{nom:'',montant:0,date:'',fichier:'',fichierNom:''}]}}))},icon('plus',12),' Ajouter devis'));
+      f.appendChild(factSec);
+      // Photos
+      const photoSec=S('div',{className:'form-full'});
+      photoSec.appendChild(S('label',{className:'form-label'},'Photos'));
+      photoSec.appendChild(photoUpload(ed.photos||[],
+        src=>setState(s=>({edit:{...s.edit,photos:[...(s.edit.photos||[]),src]}})),
+        idx=>setState(s=>({edit:{...s.edit,photos:(s.edit.photos||[]).filter((_,i)=>i!==idx)}}))
+      ));
+      f.appendChild(photoSec);
+      // Workflow management
+      if(state.modal==='editMaint'){
+        const wfSec=S('div',{className:'form-full',style:{marginTop:'8px',padding:'8px',background:'#f8fafc',borderRadius:'6px'}});
+        wfSec.appendChild(S('div',{style:{fontWeight:600,fontSize:'13px',marginBottom:'6px'}},'Étapes du workflow'));
+        const currentWf=ed.workflow||[];
+        wfSec.appendChild(wfBar(currentWf));
+        const nextStep=WF_STEPS.find(s=>!currentWf.find(w=>w.step===s));
+        const wfBtns=S('div',{style:{display:'flex',gap:'6px',marginTop:'6px'}});
+        if(currentWf.length>0){
+          wfBtns.appendChild(S('button',{className:'btn btn-d btn-sm',onClick:()=>{
+            setState(s=>{const wf=[...(s.edit.workflow||[])];wf.pop();return{edit:{...s.edit,workflow:wf}};});
+          }},icon('x',12),' Retour'));
+        }
+        if(nextStep){
+          wfBtns.appendChild(S('button',{className:'btn btn-p btn-sm',onClick:()=>{
+            setState(s=>({edit:{...s.edit,workflow:[...(s.edit.workflow||[]),{step:nextStep,date:today(),par:''}]}}));
+          }},icon('check',12),' Valider: '+nextStep));
+        }
+        wfSec.appendChild(wfBtns);
+        f.appendChild(wfSec);
+      }
+      const btns=S('div',{className:'form-full',style:{display:'flex',justifyContent:'flex-end',gap:'8px',marginTop:'8px'}});
+      btns.appendChild(S('button',{className:'btn btn-s',onClick:closeModal},'Annuler'));
+      btns.appendChild(S('button',{className:'btn btn-p',onClick:()=>{const e=state.edit;if(!e.titre)return;if(state.modal==='addMaint'){const newId=nId(state.maint);setState(s=>({maint:[...s.maint,{...e,id:newId,recurrence:e.recurrence||'aucune',checklist:e.checklist||[],factures:e.factures||[],parentId:null}],modal:null,edit:null}))}else{const isFinalized=e.workflow&&e.workflow.find(w=>w.step==='Validée');if(isFinalized&&e.recurrence&&e.recurrence!=='aucune'){const days=getRecurrenceDays(e.recurrence);if(days>0){const newId=nId(state.maint);const newEch=addDays(today(),days);setState(s=>({maint:s.maint.map(m=>m.id===e.id?{...e}:m).concat({id:newId,nId:e.nId,compId:e.compId,cat:e.cat,titre:e.titre,prio:e.prio,statut:'Planifiée',echeance:newEch,dateFin:null,freq:e.freq,cout:e.cout,coutReel:null,assigneA:e.assigneA,desc:e.desc,justif:'En attente',workflow:[],photos:[],recurrence:e.recurrence,parentId:e.id,checklist:[],factures:[]}),modal:null,edit:null}))}}else{setState(s=>({maint:s.maint.map(m=>m.id===e.id?{...e}:m),modal:null,edit:null}))}}}},icon('save',14),' Enregistrer'));
+      f.appendChild(btns);return f;
+    }));
+  }
+  return sec;
+}
+
+// ─── Part 8: Coûts (with justificatif indicators & filtering) ───
+function pgCouts(){
+  const sec=S('div',{className:'page'});
+  sec.appendChild(S('div',{className:'page-head'},
+    S('h2',{},'💰 Suivi des coûts'),
+    S('div',{style:{display:'flex',gap:'8px',alignItems:'center'}},
+      makeVesselFilter(),
+      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addCout',{nId:state.vessels[0]?.id||1,desc:'',cat:'Maintenance',montant:0,date:'',fournisseur:'',justif:'En attente',photos:[]})},icon('plus',14),' Ajouter')
+    )
+  ));
+  const fc=filterByVessel(state.couts);
+  // Justif stats
+  const jOk=fc.filter(c=>c.justif==='Justifié').length;
+  const jPend=fc.filter(c=>c.justif==='En attente').length;
+  const jMiss=fc.filter(c=>c.justif==='Manquant').length;
+  const totalC=fc.reduce((s,c)=>s+c.montant,0);
+  const stats=S('div',{className:'stats'});
+  stats.appendChild(statCard('Total dépenses',fmt(totalC),'anchor','#2563eb'));
+  stats.appendChild(statCard('Justifiés',jOk+'/'+fc.length,'check','#22c55e'));
+  stats.appendChild(statCard('En attente',jPend,'clock','#f59e0b'));
+  stats.appendChild(statCard('Manquants',jMiss,'alert','#ef4444'));
+  sec.appendChild(stats);
+  // Justif filter
+  const filterBar=S('div',{style:{display:'flex',gap:'8px',marginBottom:'10px',flexWrap:'wrap'}});
+  ['Tous','Justifié','En attente','Manquant'].forEach(jf=>{
+    const active=state.justifFilter===jf||(jf==='Tous'&&!state.justifFilter);
+    filterBar.appendChild(S('button',{className:'btn btn-sm '+(active?'btn-p':'btn-s'),onClick:()=>setState({justifFilter:jf==='Tous'?null:jf})},jf));
+  });
+  filterBar.appendChild(S('button',{className:'btn btn-s btn-sm',style:{marginLeft:'auto'},onClick:()=>exportCSV(fc,['id','desc','cat','montant','date','fournisseur','justif'],'couts.csv')},icon('download',12),' CSV'));
+  sec.appendChild(filterBar);
+  // Filter
+  let displayed=fc;
+  if(state.justifFilter)displayed=displayed.filter(c=>c.justif===state.justifFilter);
+  // Cost by category chart
+  const cats={};displayed.forEach(c=>{cats[c.cat]=(cats[c.cat]||0)+c.montant;});
+  const catEntries=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+  if(catEntries.length){
+    const chartSec=S('div',{className:'card',style:{marginBottom:'12px',padding:'18px 20px'}});
+    chartSec.appendChild(S('div',{style:{fontWeight:600,fontSize:'14px',marginBottom:'16px',color:'#1e293b'}},'Répartition par catégorie'));
+    const maxVal=Math.max(...catEntries.map(e=>e[1]),1);
+    const barColors=['#3b82f6','#22c55e','#f59e0b','#ef4444','#8b5cf6','#06b6d4'];
+    catEntries.forEach(([cat,val],i)=>{
+      const pct=((val/maxVal)*100).toFixed(0);
+      const row=S('div',{style:{display:'flex',alignItems:'center',gap:'12px',marginBottom:'12px'}});
+      row.appendChild(S('div',{style:{width:'120px',fontSize:'12px',textAlign:'right',color:'#475569',fontWeight:500,flexShrink:0}},cat));
+      row.appendChild(S('div',{style:{flex:1,background:'#f1f5f9',borderRadius:'6px',height:'28px',overflow:'hidden',position:'relative'}},
+        S('div',{style:{width:pct+'%',height:'100%',background:barColors[i%barColors.length],borderRadius:'6px',transition:'width .4s ease'}})
+      ));
+      row.appendChild(S('div',{style:{width:'90px',fontSize:'13px',fontWeight:600,color:'#1e293b',textAlign:'right',flexShrink:0}},fmt(val)));
+      chartSec.appendChild(row);
+    });
+    sec.appendChild(chartSec);
+  }
+  // Table
+  if(!displayed.length){sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucun coût.'));return sec;}
+  const tbl=S('table',{});
+  const thead=S('thead',{});
+  const hr=S('tr',{});['Navire','Description','Catégorie','Montant','Date','Fournisseur','Justif.','Pièces',''].forEach(h=>hr.appendChild(S('th',{},h)));
+  thead.appendChild(hr);tbl.appendChild(thead);
+  const tbody=S('tbody',{});
+  displayed.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).forEach(c=>{
+    const tr=S('tr',{});
+    tr.appendChild(S('td',{},vesselName(c.nId)));
+    tr.appendChild(S('td',{},c.desc));
+    tr.appendChild(S('td',{},c.cat));
+    tr.appendChild(S('td',{style:{fontWeight:600}},fmt(c.montant)));
+    tr.appendChild(S('td',{},c.date||'-'));
+    tr.appendChild(S('td',{},c.fournisseur||'-'));
+    const jCls=c.justif==='Justifié'?'tag-ok':c.justif==='Manquant'?'tag-warn':'tag-pending';
+    tr.appendChild(S('td',{},S('span',{className:'tag '+jCls},c.justif)));
+    // Photos column
+    const photosTd=S('td',{});
+    const cPhotos=c.photos||[];
+    if(cPhotos.length){
+      const thumbRow=S('div',{style:{display:'flex',gap:'3px',flexWrap:'wrap'}});
+      cPhotos.slice(0,3).forEach(src=>{const img=S('img',{src:src,style:{width:'28px',height:'28px',borderRadius:'4px',objectFit:'cover',cursor:'pointer',border:'1px solid #e2e8f0'}});img.addEventListener('click',()=>showLightbox(src));thumbRow.appendChild(img)});
+      if(cPhotos.length>3)thumbRow.appendChild(S('span',{style:{fontSize:'10px',color:'#64748b',alignSelf:'center'}},'+'+String(cPhotos.length-3)));
+      photosTd.appendChild(thumbRow);
+    } else { photosTd.appendChild(S('span',{style:{color:'#cbd5e1',fontSize:'11px'}},'—')); }
+    tr.appendChild(photosTd);
+    const acts=S('td',{});
+    acts.appendChild(S('button',{className:'icon-btn',onClick:()=>openModal('editCout',{...c})},icon('edit',14)));
+    acts.appendChild(S('button',{className:'icon-btn danger',onClick:()=>{if(confirm('Supprimer ce coût ?'))setState(s=>({couts:s.couts.filter(x=>x.id!==c.id)}))}},icon('trash',14)));
+    tr.appendChild(acts);
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);sec.appendChild(tbl);
+  // Modal
+  if(state.modal==='addCout'||state.modal==='editCout'){
+    sec.appendChild(renderModal(state.modal==='addCout'?'Ajouter un coût':'Modifier',true,()=>{
+      const ed=state.edit;const f=S('div',{className:'form-row'});
+      f.appendChild(makeVesselSel(ed.nId,e=>setState(s=>({edit:{...s.edit,nId:+e.target.value}}))));
+      f.appendChild(makeInput('Description',null,ed.desc,e=>setState(s=>({edit:{...s.edit,desc:e.target.value}}))));
+      f.appendChild(makeSelect('Catégorie',['Maintenance','Carburant','Port & Marina','Assurance','Équipage','Pièces','Autre'],ed.cat,e=>setState(s=>({edit:{...s.edit,cat:e.target.value}}))));
+      f.appendChild(makeInput('Montant (€)','number',ed.montant,e=>setState(s=>({edit:{...s.edit,montant:+e.target.value}}))));
+      f.appendChild(makeInput('Date','date',ed.date,e=>setState(s=>({edit:{...s.edit,date:e.target.value}}))));
+      f.appendChild(makeInput('Fournisseur',null,ed.fournisseur,e=>setState(s=>({edit:{...s.edit,fournisseur:e.target.value}}))));
+      f.appendChild(makeSelect('Justificatif',JUSTIFS,ed.justif,e=>setState(s=>({edit:{...s.edit,justif:e.target.value}}))));
+      // Photo upload for justificatif
+      const photoSec=S('div',{className:'form-full',style:{marginTop:'8px'}});
+      photoSec.appendChild(S('label',{className:'form-label'},'📷 Photos justificatif / facture'));
+      photoSec.appendChild(photoUpload(ed.photos||[],
+        src=>setState(s=>({edit:{...s.edit,photos:[...(s.edit.photos||[]),src]}})),
+        idx=>setState(s=>{const p=[...(s.edit.photos||[])];p.splice(idx,1);return{edit:{...s.edit,photos:p}}})
+      ));
+      f.appendChild(photoSec);
+      const btns=S('div',{className:'form-full',style:{display:'flex',justifyContent:'flex-end',gap:'8px',marginTop:'8px'}});
+      btns.appendChild(S('button',{className:'btn btn-s',onClick:closeModal},'Annuler'));
+      btns.appendChild(S('button',{className:'btn btn-p',onClick:()=>{const e=state.edit;if(!e.desc)return;if(state.modal==='addCout')setState(s=>({couts:[...s.couts,{...e,id:nId(s.couts)}],modal:null,edit:null}));else setState(s=>({couts:s.couts.map(c=>c.id===e.id?{...e}:c),modal:null,edit:null}))}},icon('save',14),' Enregistrer'));
+      f.appendChild(btns);return f;
+    }));
+  }
+  return sec;
+}
+
+// ─── Part 9: Charter & APA + Comptabilité ───
+function pgCharter(){
+  const sec=S('div',{className:'page'});
+  sec.appendChild(S('div',{className:'page-head'},
+    S('h2',{},'⛵ Charter & APA'),
+    S('div',{style:{display:'flex',gap:'8px'}},
+      makeVesselFilter(),
+      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addCharter',{nId:state.vessels[0]?.id||1,client:'',debut:'',fin:'',montant:0,apa:0,statut:'Confirmé',brokers:[],cruisingArea:'',miseADispo:[]})},icon('plus',14),' Nouveau charter')
+    )
+  ));
+  const fch=filterByVessel(state.charters);
+  // Stats
+  const totalRev=fch.reduce((s,c)=>s+c.montant,0);
+  const totalMAD=fch.reduce((s,c)=>s+(c.miseADispo||[]).reduce((t,m)=>t+m.montant,0),0);
+  const totalAPA=fch.reduce((s,c)=>s+c.apa,0);
+  const apaSpent=filterByVessel(state.apaDep).reduce((s,d)=>s+d.montant,0);
+  const stats=S('div',{className:'stats'});
+  stats.appendChild(statCard('CA Charter',fmt(totalRev+totalMAD),'anchor','#2563eb'));
+  stats.appendChild(statCard('APA collecté',fmt(totalAPA),'wallet','#22c55e'));
+  stats.appendChild(statCard('APA dépensé',fmt(apaSpent),'cart','#f59e0b'));
+  stats.appendChild(statCard('APA restant',fmt(totalAPA-apaSpent),'calc','#8b5cf6'));
+  sec.appendChild(stats);
+  // Charter list
+  sec.appendChild(S('h3',{style:{fontSize:'15px',fontWeight:600,margin:'16px 0 10px'}},'Charters'));
+  if(!fch.length)sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucun charter.'));
+  fch.forEach(ch=>{
+    const stCls=ch.statut==='Confirmé'?'tag-ok':ch.statut==='Terminé'?'tag-ok':ch.statut==='Annulé'?'tag-warn':'tag-pending';
+    const card=S('div',{className:'card',style:{marginBottom:'14px',overflow:'hidden'}});
+    // Header
+    const hdr=S('div',{style:{padding:'16px 18px 12px',display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:'16px'}});
+    const hLeft=S('div',{style:{flex:1,minWidth:0}});
+    hLeft.appendChild(S('div',{style:{fontWeight:600,fontSize:'15px',color:'#1e293b',marginBottom:'4px'}},ch.client+' — '+vesselName(ch.nId)));
+    const metaRow=S('div',{style:{display:'flex',alignItems:'center',gap:'8px',fontSize:'12px',color:'#64748b',flexWrap:'wrap'}});
+    metaRow.appendChild(S('span',{},fD(ch.debut)+' → '+fD(ch.fin)));
+    metaRow.appendChild(S('span',{className:'tag '+stCls},ch.statut));
+    if(ch.cruisingArea){metaRow.appendChild(S('span',{className:'tag b-cyan'},ch.cruisingArea));}
+    const chBrokers=ch.brokers||[];if(chBrokers.length){chBrokers.forEach(b=>{metaRow.appendChild(S('span',{style:{fontSize:'11px',color:'#64748b'}},'🏢 '+b.nom+(b.commission?' ('+b.commission+'%)':'')));});}
+    hLeft.appendChild(metaRow);
+    hdr.appendChild(hLeft);
+    const hRight=S('div',{style:{display:'flex',alignItems:'center',gap:'10px',flexShrink:0}});
+    const chBk=ch.brokers||[];const totalCommPct=chBk.reduce((s,b)=>s+(b.commission||0),0);const commissionAmt=ch.montant*totalCommPct/100;
+    const madTotal=(ch.miseADispo||[]).reduce((s,m)=>s+m.montant,0);
+    hRight.appendChild(S('div',{style:{textAlign:'right'}},
+      S('div',{style:{fontWeight:700,fontSize:'18px',color:'#059669'}},fmt(ch.montant)),
+      madTotal>0?S('div',{style:{fontSize:'11px',color:'#475569',marginTop:'1px'}},'+'+fmt(madTotal)+' mise à dispo'):null,
+      S('div',{style:{fontSize:'11px',color:'#64748b',marginTop:'2px'}},fmt(ch.apa)+' APA'),
+      totalCommPct>0?S('div',{style:{fontSize:'10px',color:'#f59e0b',marginTop:'2px'}},'Commission: '+fmt(commissionAmt)+' ('+totalCommPct+'%)'):null
+    ));
+    const acts=S('div',{style:{display:'flex',gap:'2px',marginLeft:'4px'}});
+    acts.appendChild(S('button',{className:'icon-btn',onClick:()=>openModal('editCharter',{...ch})},icon('edit',14)));
+    acts.appendChild(S('button',{className:'icon-btn danger',onClick:()=>{if(confirm('Supprimer ce charter ?'))setState(s=>({charters:s.charters.filter(x=>x.id!==ch.id)}))}},icon('trash',14)));
+    hRight.appendChild(acts);
+    hdr.appendChild(hRight);
+    card.appendChild(hdr);
+    // Mise à disposition (additional revenue)
+    const chMAD=ch.miseADispo||[];
+    const madSec=S('div',{style:{margin:'0 18px 12px',padding:'14px 16px',background:'#f1f5f9',borderRadius:'8px'}});
+    madSec.appendChild(S('div',{style:{fontSize:'11px',fontWeight:600,color:'#475569',textTransform:'uppercase',letterSpacing:'.5px',marginBottom:'10px'}},'Mise à disposition'));
+    if(chMAD.length){
+      chMAD.forEach((m,i)=>{
+        madSec.appendChild(S('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',fontSize:'13px',padding:'6px 0',borderBottom:'1px solid #e2e8f0'}},
+          S('span',{style:{color:'#1e293b'}},m.desc),
+          S('div',{style:{display:'flex',alignItems:'center',gap:'6px'}},
+            S('span',{style:{fontWeight:600,color:'#334155'}},'+'+fmt(m.montant)),
+            S('button',{className:'icon-btn danger',style:{padding:'2px'},onClick:()=>{if(confirm('Supprimer cette ligne ?'))setState(s=>({charters:s.charters.map(c=>c.id===ch.id?{...c,miseADispo:c.miseADispo.filter((_,idx)=>idx!==i)}:c)}))}},icon('trash',12))
+          )
+        ));
+      });
+      const madTot=chMAD.reduce((s,m)=>s+m.montant,0);
+      madSec.appendChild(S('div',{style:{display:'flex',justifyContent:'space-between',fontSize:'13px',fontWeight:600,marginTop:'10px',paddingTop:'10px',color:'#334155'}},
+        S('span',{},'Total mise à dispo'),S('span',{},'+'+fmt(madTot))
+      ));
+      madSec.appendChild(S('div',{style:{display:'flex',justifyContent:'space-between',fontSize:'12px',fontWeight:600,marginTop:'4px',color:'#475569'}},
+        S('span',{},'CA total charter'),S('span',{},fmt(ch.montant+madTot))
+      ));
+    }
+    madSec.appendChild(S('button',{className:'btn btn-g btn-sm',style:{marginTop:'8px',width:'100%'},onClick:()=>openModal('addMAD',{charterId:ch.id,desc:'',montant:0})},icon('plus',12),' Ajouter mise à disposition'));
+    card.appendChild(madSec);
+    // APA expenses
+    const chDeps=state.apaDep.filter(d=>d.charterId===ch.id);
+    if(chDeps.length){
+      const depList=S('div',{style:{margin:'0 18px 16px',padding:'14px 16px',background:'#f8fafc',borderRadius:'8px'}});
+      depList.appendChild(S('div',{style:{fontSize:'11px',fontWeight:600,color:'#64748b',textTransform:'uppercase',letterSpacing:'.5px',marginBottom:'10px'}},'Dépenses APA'));
+      chDeps.forEach(d=>{
+        depList.appendChild(S('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',fontSize:'13px',padding:'6px 0',borderBottom:'1px solid #e2e8f0'}},
+          S('div',{},
+            S('span',{style:{color:'#1e293b'}},d.desc),
+            S('span',{style:{color:'#94a3b8',fontSize:'11px',marginLeft:'6px'}},'('+d.cat+')')
+          ),
+          S('div',{style:{display:'flex',alignItems:'center',gap:'6px'}},S('span',{style:{fontWeight:600,color:'#1e293b'}},fmt(d.montant)),S('button',{className:'icon-btn danger',style:{padding:'2px'},onClick:()=>{if(confirm('Supprimer cette dépense APA ?'))setState(s=>({apaDep:s.apaDep.filter(x=>x.id!==d.id)}))}},icon('trash',12)))
+        ));
+      });
+      const tot=chDeps.reduce((s,d)=>s+d.montant,0);
+      const pct=ch.apa?Math.round(tot/ch.apa*100):0;
+      const totRow=S('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',fontSize:'13px',fontWeight:600,marginTop:'10px',paddingTop:'10px'}});
+      totRow.appendChild(S('span',{style:{color:'#475569'}},'Total dépensé'));
+      totRow.appendChild(S('div',{style:{display:'flex',alignItems:'center',gap:'8px'}},
+        S('span',{style:{color:pct>90?'#ef4444':'#1e293b'}},fmt(tot)+' / '+fmt(ch.apa)),
+        S('span',{style:{fontSize:'10px',color:pct>90?'#ef4444':'#64748b',background:pct>90?'#fef2f2':'#f1f5f9',padding:'2px 6px',borderRadius:'4px'}},pct+'%')
+      ));
+      depList.appendChild(totRow);
+      // Progress bar
+      const progBar=S('div',{style:{height:'4px',background:'#e2e8f0',borderRadius:'2px',marginTop:'8px',overflow:'hidden'}});
+      progBar.appendChild(S('div',{style:{height:'100%',width:Math.min(pct,100)+'%',background:pct>90?'#ef4444':pct>70?'#f59e0b':'#22c55e',borderRadius:'2px',transition:'width .3s'}}));
+      depList.appendChild(progBar);
+      depList.appendChild(S('button',{className:'btn btn-s btn-sm',style:{marginTop:'8px',width:'100%'},onClick:()=>openModal('addApa',{nId:ch.nId,charterId:ch.id,desc:'',cat:'Nourriture',montant:0,date:today()})},icon('plus',12),' Ajouter dépense APA'));
+      card.appendChild(depList);
+    }else{
+      card.appendChild(S('div',{style:{margin:'0 18px 16px'}},S('button',{className:'btn btn-s btn-sm',onClick:()=>openModal('addApa',{nId:ch.nId,charterId:ch.id,desc:'',cat:'Nourriture',montant:0,date:today()})},icon('plus',12),' Ajouter dépense APA')));
+    }
+    sec.appendChild(card);
+  });
+  // Charter modal
+  if(state.modal==='addCharter'||state.modal==='editCharter'){
+    sec.appendChild(renderModal(state.modal==='addCharter'?'Nouveau charter':'Modifier',true,()=>{
+      const ed=state.edit;const f=S('div',{className:'form-row'});
+      f.appendChild(makeVesselSel(ed.nId,e=>setState(s=>({edit:{...s.edit,nId:+e.target.value}}))));
+      f.appendChild(makeInput('Client',null,ed.client,e=>setState(s=>({edit:{...s.edit,client:e.target.value}}))));
+      f.appendChild(makeInput('Début','date',ed.debut,e=>setState(s=>({edit:{...s.edit,debut:e.target.value}}))));
+      f.appendChild(makeInput('Fin','date',ed.fin,e=>setState(s=>({edit:{...s.edit,fin:e.target.value}}))));
+      f.appendChild(makeInput('Montant (€)','number',ed.montant,e=>setState(s=>({edit:{...s.edit,montant:+e.target.value}}))));
+      f.appendChild(makeInput('APA (€)','number',ed.apa,e=>setState(s=>({edit:{...s.edit,apa:+e.target.value}}))));
+      f.appendChild(makeInput('Zone de croisière',null,ed.cruisingArea||'',e=>setState(s=>({edit:{...s.edit,cruisingArea:e.target.value}}))));
+      // Courtiers section
+      const bkSec=S('div',{className:'form-full',style:{padding:'14px 16px',background:'#fffbeb',borderRadius:'8px',marginBottom:'8px'}});
+      bkSec.appendChild(S('div',{style:{fontSize:'11px',fontWeight:600,color:'#92400e',textTransform:'uppercase',letterSpacing:'.5px',marginBottom:'10px'}},'Courtiers / Brokers'));
+      const edBrokers=ed.brokers||[];
+      edBrokers.forEach((b,i)=>{
+        const row=S('div',{style:{display:'flex',gap:'8px',alignItems:'center',marginBottom:'6px'}});
+        row.appendChild(S('input',{className:'inp',placeholder:'Nom courtier',value:b.nom,style:{flex:2},onchange:e=>{setState(s=>{const bk=[...(s.edit.brokers||[])];bk[i]={...bk[i],nom:e.target.value};return{edit:{...s.edit,brokers:bk}}})}}));
+        row.appendChild(S('input',{className:'inp',type:'number',placeholder:'%',value:b.commission||0,style:{flex:0,width:'70px'},onchange:e=>{setState(s=>{const bk=[...(s.edit.brokers||[])];bk[i]={...bk[i],commission:+e.target.value};return{edit:{...s.edit,brokers:bk}}})}}));
+        row.appendChild(S('span',{style:{fontSize:'12px',color:'#64748b'}},'%'));
+        row.appendChild(S('button',{className:'icon-btn danger',onClick:()=>{if(confirm('Supprimer ce courtier ?'))setState(s=>{const bk=[...(s.edit.brokers||[])];bk.splice(i,1);return{edit:{...s.edit,brokers:bk}}})}},icon('trash',14)));
+        bkSec.appendChild(row);
+      });
+      if(edBrokers.length){
+        const totC=edBrokers.reduce((s,b)=>s+(b.commission||0),0);
+        bkSec.appendChild(S('div',{style:{fontSize:'12px',color:'#92400e',fontWeight:600,marginTop:'4px'}},'Total commission : '+totC+' %'));
+      }
+      bkSec.appendChild(S('button',{className:'btn btn-s btn-sm',style:{marginTop:'8px'},onClick:()=>setState(s=>({edit:{...s.edit,brokers:[...(s.edit.brokers||[]),{nom:'',commission:0}]}}))},icon('plus',12),' Ajouter courtier'));
+      f.appendChild(bkSec);
+      f.appendChild(makeSelect('Statut',['Confirmé','Option','Annulé','Terminé'],ed.statut,e=>setState(s=>({edit:{...s.edit,statut:e.target.value}}))));
+      const btns=S('div',{className:'form-full',style:{display:'flex',justifyContent:'flex-end',gap:'8px',marginTop:'8px'}});
+      btns.appendChild(S('button',{className:'btn btn-s',onClick:closeModal},'Annuler'));
+      btns.appendChild(S('button',{className:'btn btn-p',onClick:()=>{const e=state.edit;if(!e.client)return;if(state.modal==='addCharter')setState(s=>({charters:[...s.charters,{...e,id:nId(s.charters)}],modal:null,edit:null}));else setState(s=>({charters:s.charters.map(c=>c.id===e.id?{...e}:c),modal:null,edit:null}))}},icon('save',14),' Enregistrer'));
+      f.appendChild(btns);return f;
+    }));
+  }
+  // APA modal
+  if(state.modal==='addApa'){
+    sec.appendChild(renderModal('Dépense APA',true,()=>{
+      const ed=state.edit;const f=S('div',{className:'form-row'});
+      f.appendChild(makeVesselSel(ed.nId,e=>setState(s=>({edit:{...s.edit,nId:+e.target.value}}))));
+      // Charter select
+      const chW=S('div',{className:'form-group'});chW.appendChild(S('label',{},'Charter'));
+      const chSel=S('select',{value:ed.charterId,onchange:e=>setState(s=>({edit:{...s.edit,charterId:+e.target.value}}))});
+      state.charters.filter(c=>c.nId===+ed.nId).forEach(c=>chSel.appendChild(S('option',{value:c.id,selected:c.id===ed.charterId},c.client+' ('+c.debut+')')));
+      chW.appendChild(chSel);f.appendChild(chW);
+      f.appendChild(makeInput('Description',null,ed.desc,e=>setState(s=>({edit:{...s.edit,desc:e.target.value}}))));
+      f.appendChild(makeSelect('Catégorie',['Nourriture','Carburant','Port','Activités','Autre'],ed.cat,e=>setState(s=>({edit:{...s.edit,cat:e.target.value}}))));
+      f.appendChild(makeInput('Montant (€)','number',ed.montant,e=>setState(s=>({edit:{...s.edit,montant:+e.target.value}}))));
+      f.appendChild(makeInput('Date','date',ed.date,e=>setState(s=>({edit:{...s.edit,date:e.target.value}}))));
+      const btns=S('div',{className:'form-full',style:{display:'flex',justifyContent:'flex-end',gap:'8px',marginTop:'8px'}});
+      btns.appendChild(S('button',{className:'btn btn-s',onClick:closeModal},'Annuler'));
+      btns.appendChild(S('button',{className:'btn btn-p',onClick:()=>{const e=state.edit;if(!e.desc)return;setState(s=>({apaDep:[...s.apaDep,{...e,id:nId(s.apaDep),charterId:+e.charterId,nId:+e.nId}],modal:null,edit:null}))}},icon('save',14),' Enregistrer'));
+      f.appendChild(btns);return f;
+    }));
+  }
+  // Mise à disposition modal
+  if(state.modal==='addMAD'){
+    sec.appendChild(renderModal('Ajouter mise à disposition',true,()=>{
+      const ed=state.edit;const f=S('div',{className:'form-row'});
+      f.appendChild(makeInput('Description',null,ed.desc,e=>setState(s=>({edit:{...s.edit,desc:e.target.value}}))));
+      f.appendChild(makeInput('Montant (€)','number',ed.montant,e=>setState(s=>({edit:{...s.edit,montant:+e.target.value}}))));
+      const btns=S('div',{className:'form-full',style:{display:'flex',justifyContent:'flex-end',gap:'8px',marginTop:'8px'}});
+      btns.appendChild(S('button',{className:'btn btn-s',onClick:closeModal},'Annuler'));
+      btns.appendChild(S('button',{className:'btn btn-p',onClick:()=>{
+        const e=state.edit;if(!e.desc||!e.montant)return;
+        setState(s=>({charters:s.charters.map(c=>c.id===e.charterId?{...c,miseADispo:[...(c.miseADispo||[]),{desc:e.desc,montant:+e.montant}]}:c),modal:null,edit:null}));
+      }},icon('save',14),' Enregistrer'));
+      f.appendChild(btns);return f;
+    }));
+  }
+  return sec;
+}
+
+// ─── Comptabilité (monthly extraction) ───
+function pgCompta(){
+  const sec=S('div',{className:'page'});
+  sec.appendChild(S('div',{className:'page-head'},
+    S('h2',{},'📊 Comptabilité'),
+    S('div',{style:{display:'flex',gap:'8px',alignItems:'center',flexWrap:'wrap'}},
+      makeVesselFilter(),
+      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addRevenu',{nId:state.vessels[0]?.id||1,desc:'',type:'Charter',montant:0,date:''})},icon('plus',14),' Ajouter revenu'),
+      S('button',{className:'btn btn-s btn-sm',onClick:()=>openModal('extractCompta',{month:state.comptaMois||new Date().toISOString().slice(0,7)})},icon('download',14),' Extraction mensuelle')
+    )
+  ));
+  // Date range filter
+  const now=new Date();const curMonth=now.toISOString().slice(0,7);
+  if(!state.comptaMois)setState({comptaMois:curMonth});
+  const moisBar=S('div',{style:{display:'flex',gap:'8px',alignItems:'center',marginBottom:'12px'}});
+  moisBar.appendChild(S('label',{style:{fontSize:'13px',fontWeight:500}},'Mois :'));
+  const mInput=S('input',{type:'month',value:state.comptaMois||curMonth,style:{padding:'4px 8px',border:'1px solid #cbd5e1',borderRadius:'6px',fontSize:'13px'},onchange:e=>setState({comptaMois:e.target.value})});
+  moisBar.appendChild(mInput);
+  sec.appendChild(moisBar);
+  const mois=state.comptaMois||curMonth;
+  // Filter data by month
+  const mCouts=filterByVessel(state.couts).filter(c=>c.date&&c.date.startsWith(mois));
+  const mRevs=filterByVessel(state.revenus).filter(r=>r.date&&r.date.startsWith(mois));
+  const totalDep=mCouts.reduce((s,c)=>s+c.montant,0);
+  const totalRev=mRevs.reduce((s,r)=>s+r.montant,0);
+  const result=totalRev-totalDep;
+  // Stats
+  const stats=S('div',{className:'stats'});
+  stats.appendChild(statCard('Revenus',fmt(totalRev),'anchor','#22c55e'));
+  stats.appendChild(statCard('Dépenses',fmt(totalDep),'cart','#ef4444'));
+  stats.appendChild(statCard('Résultat',fmt(result),result>=0?'check':'alert',result>=0?'#22c55e':'#ef4444'));
+  const jOk=mCouts.filter(c=>c.justif==='Justifié').length;
+  stats.appendChild(statCard('Justifiés',jOk+'/'+mCouts.length,'shield',jOk===mCouts.length?'#22c55e':'#f59e0b'));
+  sec.appendChild(stats);
+  // Revenue table
+  sec.appendChild(S('h3',{style:{fontSize:'14px',fontWeight:600,margin:'12px 0 8px'}},'Revenus du mois'));
+  if(mRevs.length){
+    const tbl=S('table',{});const thead=S('thead',{});const hr=S('tr',{});
+    ['Navire','Description','Type','Montant','Date',''].forEach(h=>hr.appendChild(S('th',{},h)));
+    thead.appendChild(hr);tbl.appendChild(thead);
+    const tbody=S('tbody',{});
+    mRevs.forEach(r=>{
+      const tr=S('tr',{});
+      tr.appendChild(S('td',{},vesselName(r.nId)));tr.appendChild(S('td',{},r.desc));
+      tr.appendChild(S('td',{},r.type));tr.appendChild(S('td',{style:{fontWeight:600,color:'#22c55e'}},fmt(r.montant)));
+      tr.appendChild(S('td',{},r.date));
+      const acts=S('td',{});
+      acts.appendChild(S('button',{className:'icon-btn danger',onClick:()=>{if(confirm('Supprimer ce revenu ?'))setState(s=>({revenus:s.revenus.filter(x=>x.id!==r.id)}))}},icon('trash',14)));
+      tr.appendChild(acts);tbody.appendChild(tr);
+    });
+    tbl.appendChild(tbody);sec.appendChild(tbl);
+  }else sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucun revenu ce mois.'));
+  // Expense table
+  sec.appendChild(S('h3',{style:{fontSize:'14px',fontWeight:600,margin:'12px 0 8px'}},'Dépenses du mois'));
+  if(mCouts.length){
+    const tbl=S('table',{});const thead=S('thead',{});const hr=S('tr',{});
+    ['Navire','Description','Catégorie','Montant','Justif.',''].forEach(h=>hr.appendChild(S('th',{},h)));
+    thead.appendChild(hr);tbl.appendChild(thead);
+    const tbody=S('tbody',{});
+    mCouts.forEach(c=>{
+      const tr=S('tr',{});
+      tr.appendChild(S('td',{},vesselName(c.nId)));tr.appendChild(S('td',{},c.desc));
+      tr.appendChild(S('td',{},c.cat));tr.appendChild(S('td',{style:{fontWeight:600,color:'#ef4444'}},fmt(c.montant)));
+      const jCls=c.justif==='Justifié'?'tag-ok':c.justif==='Manquant'?'tag-warn':'tag-pending';
+      tr.appendChild(S('td',{},S('span',{className:'tag '+jCls},c.justif)));
+      tr.appendChild(S('td',{}));tbody.appendChild(tr);
+    });
+    tbl.appendChild(tbody);sec.appendChild(tbl);
+  }else sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucune dépense ce mois.'));
+  // Export
+  const expBar=S('div',{style:{display:'flex',gap:'8px',marginTop:'12px'}});
+  expBar.appendChild(S('button',{className:'btn btn-s btn-sm',onClick:()=>{
+    const all=[...mRevs.map(r=>({type:'Revenu',...r})),...mCouts.map(c=>({type:'Dépense',...c}))];
+    exportCSV(all,['type','desc','cat','montant','date','justif'],'compta-'+mois+'.csv');
+  }},icon('download',12),' Export CSV'));
+  expBar.appendChild(S('button',{className:'btn btn-s btn-sm',onClick:()=>{
+    let h='<h2>Extraction comptable — '+mois+'</h2>';
+    h+='<p>Revenus: '+fmt(totalRev)+' | Dépenses: '+fmt(totalDep)+' | Résultat: '+fmt(result)+'</p>';
+    h+='<table border="1" cellpadding="4" style="border-collapse:collapse;font-size:11px"><tr><th>Type</th><th>Description</th><th>Catégorie</th><th>Montant</th><th>Date</th><th>Justif.</th></tr>';
+    mRevs.forEach(r=>{h+='<tr><td>Revenu</td><td>'+esc(r.desc)+'</td><td>'+r.type+'</td><td style="color:green">'+fmt(r.montant)+'</td><td>'+r.date+'</td><td>-</td></tr>';});
+    mCouts.forEach(c=>{h+='<tr><td>Dépense</td><td>'+esc(c.desc)+'</td><td>'+c.cat+'</td><td style="color:red">'+fmt(c.montant)+'</td><td>'+c.date+'</td><td>'+c.justif+'</td></tr>';});
+    h+='</table>';exportPrint('Comptabilité '+mois,h);
+  }},icon('printer',12),' PDF'));
+  // Download all justificatifs button
+  const allPhotos=[];
+  mCouts.forEach(c=>{(c.photos||[]).forEach(src=>{allPhotos.push({src,desc:c.desc,date:c.date||'—',montant:c.montant});});});
+  expBar.appendChild(S('button',{className:'btn btn-sm '+(allPhotos.length?'btn-g':'btn-s'),style:{opacity:allPhotos.length?1:0.5},onClick:()=>{
+    if(!allPhotos.length){alert('Aucun justificatif photo pour ce mois.');return;}
+    let h='<style>body{font-family:Arial,sans-serif;padding:20px}h1{font-size:16px;text-align:center;margin-bottom:6px}h2{font-size:13px;text-align:center;color:#64748b;margin-bottom:20px}.item{page-break-inside:avoid;margin-bottom:24px;border:1px solid #ddd;border-radius:8px;overflow:hidden}.item-header{background:#f8fafc;padding:10px 14px;font-size:12px;display:flex;justify-content:space-between;border-bottom:1px solid #ddd}.item-header .desc{font-weight:600}.item-header .meta{color:#64748b}.item-body{padding:14px;text-align:center}.item-body img{max-width:100%;max-height:500px;border-radius:4px}@media print{body{padding:0}.item{break-inside:avoid}}</style>';
+    h+='<h1>Justificatifs — '+mois+'</h1>';
+    h+='<h2>'+allPhotos.length+' pièce(s) jointe(s)</h2>';
+    allPhotos.forEach((p,i)=>{
+      h+='<div class="item"><div class="item-header"><span class="desc">'+(i+1)+'. '+esc(p.desc)+'</span><span class="meta">'+p.date+' — '+fmt(p.montant)+'</span></div><div class="item-body"><img src="'+p.src+'"/></div></div>';
+    });
+    h+='<script>window.onload=function(){window.print()}<\/script>';
+    exportPrint('Justificatifs '+mois,h);
+  }},icon('download',12),' Justificatifs ('+allPhotos.length+')'));
+  sec.appendChild(expBar);
+  // Revenue modal
+  if(state.modal==='addRevenu'){
+    sec.appendChild(renderModal('Ajouter un revenu',true,()=>{
+      const ed=state.edit;const f=S('div',{className:'form-row'});
+      f.appendChild(makeVesselSel(ed.nId,e=>setState(s=>({edit:{...s.edit,nId:+e.target.value}}))));
+      f.appendChild(makeInput('Description',null,ed.desc,e=>setState(s=>({edit:{...s.edit,desc:e.target.value}}))));
+      f.appendChild(makeSelect('Type',['Charter','Location','Autre'],ed.type,e=>setState(s=>({edit:{...s.edit,type:e.target.value}}))));
+      f.appendChild(makeInput('Montant (€)','number',ed.montant,e=>setState(s=>({edit:{...s.edit,montant:+e.target.value}}))));
+      f.appendChild(makeInput('Date','date',ed.date,e=>setState(s=>({edit:{...s.edit,date:e.target.value}}))));
+      const btns=S('div',{className:'form-full',style:{display:'flex',justifyContent:'flex-end',gap:'8px',marginTop:'8px'}});
+      btns.appendChild(S('button',{className:'btn btn-s',onClick:closeModal},'Annuler'));
+      btns.appendChild(S('button',{className:'btn btn-p',onClick:()=>{const e=state.edit;if(!e.desc)return;setState(s=>({revenus:[...s.revenus,{...e,id:nId(s.revenus)}],modal:null,edit:null}))}},icon('save',14),' Enregistrer'));
+      f.appendChild(btns);return f;
+    }));
+  }
+  // Extraction modal
+  if(state.modal==='extractCompta'){
+    sec.appendChild(renderModal('Extraction comptable mensuelle',true,()=>{
+      const ed=state.edit;const f=S('div',{className:'form-row'});
+      f.appendChild(makeInput('Mois','month',ed.month,e=>setState(s=>({edit:{...s.edit,month:e.target.value}}))));
+      const btns=S('div',{className:'form-full',style:{display:'flex',justifyContent:'flex-end',gap:'8px',marginTop:'8px'}});
+      btns.appendChild(S('button',{className:'btn btn-s',onClick:closeModal},'Annuler'));
+      btns.appendChild(S('button',{className:'btn btn-p',onClick:()=>{
+        const mois=state.edit.month;
+        const mCouts=filterByVessel(state.couts).filter(c=>c.date&&c.date.startsWith(mois));
+        const mRevs=filterByVessel(state.revenus).filter(r=>r.date&&r.date.startsWith(mois));
+        const totalDep=mCouts.reduce((s,c)=>s+c.montant,0);
+        const totalRev=mRevs.reduce((s,r)=>s+r.montant,0);
+        const result=totalRev-totalDep;
+        const prevMonthDat=new Date(mois+'-01');prevMonthDat.setMonth(prevMonthDat.getMonth()-1);
+        const prevMonth=prevMonthDat.toISOString().slice(0,7);
+        const prevCouts=filterByVessel(state.couts).filter(c=>c.date&&c.date<mois);
+        const prevRevs=filterByVessel(state.revenus).filter(r=>r.date&&r.date<mois);
+        const prevResult=prevRevs.reduce((s,r)=>s+r.montant,0)-prevCouts.reduce((s,c)=>s+c.montant,0);
+        let h='<style>body{font-family:Arial,sans-serif;padding:20px;font-size:12px}.header{text-align:center;margin-bottom:20px}.header h1{margin:0;font-size:16px}.summary{display:flex;gap:20px;margin-bottom:20px}.summary-item{flex:1;padding:10px;border:1px solid #ddd;border-radius:4px;text-align:center}.summary-item .val{font-size:18px;font-weight:bold;color:#1e293b}.summary-item .lbl{font-size:11px;color:#64748b;margin-top:4px}table{width:100%;border-collapse:collapse;margin-top:10px}th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:11px}th{background:#f8fafc;font-weight:600}.print-btn{display:none}@media print{.print-btn{display:none}}</style>';
+        h+='<div class="header"><h1>Extraction Comptable</h1><p>Période: '+mois+'</p></div>';
+        h+='<div class="summary">';
+        h+='<div class="summary-item"><div class="val">'+fmt(totalRev)+'</div><div class="lbl">Revenus</div></div>';
+        h+='<div class="summary-item"><div class="val">'+fmt(totalDep)+'</div><div class="lbl">Dépenses</div></div>';
+        h+='<div class="summary-item" style="background:'+(result>=0?'#f0fdf4':'#fef2f2')+';"><div class="val" style="color:'+(result>=0?'#059669':'#dc2626')+'">'+fmt(result)+'</div><div class="lbl">Résultat</div></div>';
+        h+='<div class="summary-item"><div class="val">'+fmt(prevResult+result)+'</div><div class="lbl">Bilan cumulé</div></div></div>';
+        h+='<h3>Revenus du mois</h3><table><tr><th>Date</th><th>Description</th><th>Type</th><th>Montant</th></tr>';
+        mRevs.forEach(r=>{h+='<tr><td>'+r.date+'</td><td>'+esc(r.desc)+'</td><td>'+r.type+'</td><td style="color:#059669;font-weight:600">'+fmt(r.montant)+'</td></tr>';});
+        h+='<tr style="font-weight:600;background:#f8fafc"><td colspan="3">Total revenus</td><td style="color:#059669">'+fmt(totalRev)+'</td></tr></table>';
+        h+='<h3 style="margin-top:20px">Dépenses du mois</h3><table><tr><th>Date</th><th>Description</th><th>Catégorie</th><th>Montant</th><th>Justif.</th><th>Pièces</th></tr>';
+        mCouts.forEach(c=>{const jCls=c.justif==='Justifié'?'#059669':c.justif==='Manquant'?'#dc2626':'#f59e0b';const nbP=(c.photos||[]).length;h+='<tr><td>'+c.date+'</td><td>'+esc(c.desc)+'</td><td>'+c.cat+'</td><td style="color:#dc2626;font-weight:600">'+fmt(c.montant)+'</td><td style="color:'+jCls+'">'+c.justif+'</td><td>'+(nbP?nbP+' photo(s)':'—')+'</td></tr>';});
+        h+='<tr style="font-weight:600;background:#f8fafc"><td colspan="3">Total dépenses</td><td style="color:#dc2626">'+fmt(totalDep)+'</td><td>-</td><td>-</td></tr></table>';
+        // Append photos section
+        const rPhotos=[];mCouts.forEach(c=>{(c.photos||[]).forEach(src=>{rPhotos.push({src,desc:c.desc,date:c.date,montant:c.montant})})});
+        if(rPhotos.length){h+='<h3 style="margin-top:20px;page-break-before:always">Pièces justificatives ('+rPhotos.length+')</h3>';rPhotos.forEach((p,i)=>{h+='<div style="page-break-inside:avoid;margin-bottom:16px;border:1px solid #ddd;border-radius:6px;overflow:hidden"><div style="background:#f8fafc;padding:8px 12px;font-size:11px;border-bottom:1px solid #ddd"><strong>'+(i+1)+'. '+esc(p.desc)+'</strong> — '+p.date+' — '+fmt(p.montant)+'</div><div style="padding:10px;text-align:center"><img src="'+p.src+'" style="max-width:100%;max-height:400px;border-radius:4px"/></div></div>';})}
+        h+='<h3 style="margin-top:20px">Synthèse</h3><table><tr><th colspan="2">Poste</th><th>Montant</th></tr>';
+        h+='<tr><td colspan="2">Solde période précédente</td><td>'+fmt(prevResult)+'</td></tr>';
+        h+='<tr><td colspan="2">Revenus '+mois+'</td><td style="color:#059669;font-weight:600">+'+fmt(totalRev)+'</td></tr>';
+        h+='<tr><td colspan="2">Dépenses '+mois+'</td><td style="color:#dc2626;font-weight:600">-'+fmt(totalDep)+'</td></tr>';
+        h+='<tr style="font-weight:600;background:#f0fdf4;font-size:13px"><td colspan="2">Solde au '+mois+'-31</td><td style="color:#059669">'+fmt(prevResult+result)+'</td></tr></table>';
+        h+='<button class="print-btn" onclick="window.print()">Imprimer / Exporter PDF</button>';
+        exportPrint('Extraction Comptable '+mois,h);
+        setState({modal:null,edit:null});
+      }},icon('download',14),' Générer rapport'));
+      f.appendChild(btns);return f;
+    }));
+  }
+  return sec;
+}
+
+// ─── Part 10: Inventaire + Journal + Documents ───
+function pgInventaire(){
+  const sec=S('div',{className:'page'});
+  sec.appendChild(S('div',{className:'page-head'},
+    S('h2',{},'📦 Inventaire pièces'),
+    S('div',{style:{display:'flex',gap:'8px'}},
+      makeVesselFilter(),
+      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addInv',{nId:state.vessels[0]?.id||1,nom:'',ref:'',cat:'Mécanique',qte:0,seuil:1,emplacement:'',fournisseur:''})},icon('plus',14),' Ajouter')
+    )
+  ));
+  const fi=filterByVessel(state.inventaire);
+  const low=fi.filter(p=>p.qte<=p.seuil);
+  const stats=S('div',{className:'stats'});
+  stats.appendChild(statCard('Références',fi.length,'box','#2563eb'));
+  stats.appendChild(statCard('Stock bas',low.length,'alert',low.length?'#ef4444':'#22c55e'));
+  sec.appendChild(stats);
+  // Export
+  sec.appendChild(S('button',{className:'btn btn-s btn-sm',style:{marginBottom:'10px'},onClick:()=>exportCSV(fi,['nom','ref','cat','qte','seuil','emplacement','fournisseur'],'inventaire.csv')},icon('download',12),' CSV'));
+  // Table
+  if(!fi.length){sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucune pièce.'));return sec;}
+  const cats={};fi.forEach(p=>{if(!cats[p.cat])cats[p.cat]=[];cats[p.cat].push(p)});
+  Object.entries(cats).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([cat,items])=>{
+    const catCard=S('div',{className:'card',style:{padding:'16px',marginBottom:'12px'}});
+    catCard.appendChild(S('h3',{style:{fontSize:'14px',fontWeight:600,marginBottom:'10px',display:'flex',alignItems:'center',gap:'6px'}},icon('box',14),' '+cat+' ('+items.length+')'));
+    const tbl=S('table',{});const thead=S('thead',{});const hr=S('tr',{});
+    ['Navire','Pièce','Réf.','Qté','Seuil','Emplacement','Fourn.',''].forEach(h=>hr.appendChild(S('th',{},h)));
+    thead.appendChild(hr);tbl.appendChild(thead);
+    const tbody=S('tbody',{});
+    items.forEach(p=>{
+      const tr=S('tr',{style:p.qte<=p.seuil?{background:'#fef2f2'}:{}});
+      tr.appendChild(S('td',{},vesselName(p.nId)));
+      tr.appendChild(S('td',{style:{fontWeight:500}},p.nom));
+      tr.appendChild(S('td',{},p.ref||'-'));
+      tr.appendChild(S('td',{style:{fontWeight:600,color:p.qte<=p.seuil?'#ef4444':'#1e293b'}},p.qte));
+      tr.appendChild(S('td',{},p.seuil));
+      tr.appendChild(S('td',{},p.emplacement||'-'));
+      tr.appendChild(S('td',{},p.fournisseur||'-'));
+      const acts=S('td',{});
+      acts.appendChild(S('button',{className:'icon-btn',onClick:()=>openModal('editInv',{...p})},icon('edit',14)));
+      acts.appendChild(S('button',{className:'icon-btn danger',onClick:()=>{if(confirm('Supprimer cette pièce ?'))setState(s=>({inventaire:s.inventaire.filter(x=>x.id!==p.id)}))}},icon('trash',14)));
+      tr.appendChild(acts);tbody.appendChild(tr);
+    });
+    tbl.appendChild(tbody);catCard.appendChild(tbl);sec.appendChild(catCard);
+  });
+  // Modal
+  if(state.modal==='addInv'||state.modal==='editInv'){
+    sec.appendChild(renderModal(state.modal==='addInv'?'Ajouter pièce':'Modifier',true,()=>{
+      const ed=state.edit;const f=S('div',{className:'form-row'});
+      f.appendChild(makeVesselSel(ed.nId,e=>setState(s=>({edit:{...s.edit,nId:+e.target.value}}))));
+      f.appendChild(makeInput('Nom pièce',null,ed.nom,e=>setState(s=>({edit:{...s.edit,nom:e.target.value}}))));
+      f.appendChild(makeInput('Référence',null,ed.ref,e=>setState(s=>({edit:{...s.edit,ref:e.target.value}}))));
+      f.appendChild(makeSelect('Catégorie',['Mécanique','Électrique','Plomberie','Sécurité','Voiles','Autre'],ed.cat,e=>setState(s=>({edit:{...s.edit,cat:e.target.value}}))));
+      f.appendChild(makeInput('Quantité','number',ed.qte,e=>setState(s=>({edit:{...s.edit,qte:+e.target.value}}))));
+      f.appendChild(makeInput('Seuil alerte','number',ed.seuil,e=>setState(s=>({edit:{...s.edit,seuil:+e.target.value}}))));
+      f.appendChild(makeInput('Emplacement',null,ed.emplacement,e=>setState(s=>({edit:{...s.edit,emplacement:e.target.value}}))));
+      f.appendChild(makeInput('Fournisseur',null,ed.fournisseur,e=>setState(s=>({edit:{...s.edit,fournisseur:e.target.value}}))));
+      const btns=S('div',{className:'form-full',style:{display:'flex',justifyContent:'flex-end',gap:'8px',marginTop:'8px'}});
+      btns.appendChild(S('button',{className:'btn btn-s',onClick:closeModal},'Annuler'));
+      btns.appendChild(S('button',{className:'btn btn-p',onClick:()=>{const e=state.edit;if(!e.nom)return;if(state.modal==='addInv')setState(s=>({inventaire:[...s.inventaire,{...e,id:nId(s.inventaire)}],modal:null,edit:null}));else setState(s=>({inventaire:s.inventaire.map(p=>p.id===e.id?{...e}:p),modal:null,edit:null}))}},icon('save',14),' Enregistrer'));
+      f.appendChild(btns);return f;
+    }));
+  }
+  return sec;
+}
+
+function pgJournal(){
+  const sec=S('div',{className:'page'});
+  sec.appendChild(S('div',{className:'page-head'},
+    S('h2',{},'📝 Journal de bord'),
+    S('div',{style:{display:'flex',gap:'8px'}},
+      makeVesselFilter(),
+      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addLog',{nId:state.vessels[0]?.id||1,date:today(),type:'Navigation',text:'',auteur:'',photos:[]})},icon('plus',14),' Nouvelle entrée')
+    )
+  ));
+  const fl=filterByVessel(state.journal);
+  sec.appendChild(S('button',{className:'btn btn-s btn-sm',style:{marginBottom:'10px'},onClick:()=>exportCSV(fl,['date','type','texte','auteur'],'journal.csv')},icon('download',12),' CSV'));
+  if(!fl.length){sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucune entrée.'));return sec;}
+  fl.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const typeIcons={Navigation:'🧭',Maintenance:'🔧',Incident:'⚠️',Météo:'🌊',Autre:'📋'};
+  const typeColors={Navigation:'#2563eb',Maintenance:'#f59e0b',Incident:'#ef4444',Météo:'#06b6d4',Autre:'#64748b'};
+  fl.forEach(l=>{
+    const card=S('div',{className:'card',style:{marginBottom:'14px',overflow:'hidden',display:'flex'}});
+    // Color left stripe
+    const stripe=S('div',{style:{width:'5px',background:typeColors[l.type]||'#94a3b8',flexShrink:0}});
+    card.appendChild(stripe);
+    // Content
+    const content=S('div',{style:{flex:1,padding:'16px 18px'}});
+    // Header row
+    const hdr=S('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:'12px'}});
+    const left=S('div',{style:{flex:1,minWidth:0}});
+    // Date + Type + Icon
+    const titleRow=S('div',{style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'4px'}});
+    titleRow.appendChild(S('span',{style:{fontSize:'16px'}},(typeIcons[l.type]||'📋')));
+    titleRow.appendChild(S('span',{style:{fontWeight:600,fontSize:'14px',color:'#1e293b'}},fD(l.date)+' — '+l.type));
+    left.appendChild(titleRow);
+    // Meta
+    const meta=S('div',{style:{display:'flex',alignItems:'center',gap:'6px',fontSize:'12px',color:'#64748b'}});
+    meta.appendChild(S('span',{},vesselName(l.nId)));
+    if(l.auteur){meta.appendChild(S('span',{style:{color:'#cbd5e1'}},'·'));meta.appendChild(S('span',{},'👤 '+l.auteur));}
+    left.appendChild(meta);
+    hdr.appendChild(left);
+    // Actions
+    const acts=S('div',{style:{display:'flex',gap:'2px',flexShrink:0}});
+    acts.appendChild(S('button',{className:'icon-btn',onClick:()=>openModal('editLog',{...l})},icon('edit',14)));
+    acts.appendChild(S('button',{className:'icon-btn danger',onClick:()=>{if(confirm('Supprimer cette entrée ?'))setState(s=>({journal:s.journal.filter(x=>x.id!==l.id)}))}},icon('trash',14)));
+    hdr.appendChild(acts);
+    content.appendChild(hdr);
+    // Text body
+    if(l.texte)content.appendChild(S('div',{style:{fontSize:'13px',color:'#475569',marginTop:'10px',lineHeight:'1.6',whiteSpace:'pre-line'}},l.texte));
+    // Photos
+    if(l.photos&&l.photos.length)content.appendChild(photoGallery(l.photos));
+    card.appendChild(content);
+    sec.appendChild(card);
+  });
+  // Modal
+  if(state.modal==='addLog'||state.modal==='editLog'){
+    sec.appendChild(renderModal(state.modal==='addLog'?'Nouvelle entrée':'Modifier',true,()=>{
+      const ed=state.edit;const f=S('div',{className:'form-row'});
+      f.appendChild(makeVesselSel(ed.nId,e=>setState(s=>({edit:{...s.edit,nId:+e.target.value}}))));
+      f.appendChild(makeInput('Date','date',ed.date,e=>setState(s=>({edit:{...s.edit,date:e.target.value}}))));
+      f.appendChild(makeSelect('Type',['Navigation','Maintenance','Incident','Météo','Autre'],ed.type,e=>setState(s=>({edit:{...s.edit,type:e.target.value}}))));
+      f.appendChild(makeInput('Auteur',null,ed.auteur,e=>setState(s=>({edit:{...s.edit,auteur:e.target.value}}))));
+      const tw=makeInput('Texte',null,ed.texte,e=>setState(s=>({edit:{...s.edit,text:e.target.value}})),{textarea:true});tw.className='form-full';f.appendChild(tw);
+      // Photos
+      const photoSec=S('div',{className:'form-full'});
+      photoSec.appendChild(S('label',{className:'form-label'},'Photos'));
+      photoSec.appendChild(photoUpload(ed.photos||[],
+        src=>setState(s=>({edit:{...s.edit,photos:[...(s.edit.photos||[]),src]}})),
+        idx=>setState(s=>({edit:{...s.edit,photos:(s.edit.photos||[]).filter((_,i)=>i!==idx)}}))
+      ));
+      f.appendChild(photoSec);
+      const btns=S('div',{className:'form-full',style:{display:'flex',justifyContent:'flex-end',gap:'8px',marginTop:'8px'}});
+      btns.appendChild(S('button',{className:'btn btn-s',onClick:closeModal},'Annuler'));
+      btns.appendChild(S('button',{className:'btn btn-p',onClick:()=>{const e=state.edit;if(!e.texte)return;if(state.modal==='addLog')setState(s=>({journal:[...s.journal,{...e,id:nId(s.journal)}],modal:null,edit:null}));else setState(s=>({journal:s.journal.map(l=>l.id===e.id?{...e}:l),modal:null,edit:null}))}},icon('save',14),' Enregistrer'));
+      f.appendChild(btns);return f;
+    }));
+  }
+  return sec;
+}
+
+function pgDocuments(){
+  const sec=S('div',{className:'page'});
+  sec.appendChild(S('div',{className:'page-head'},
+    S('h2',{},'📁 Documents'),
+    S('div',{style:{display:'flex',gap:'8px'}},
+      makeVesselFilter(),
+      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addDoc',{nId:state.vessels[0]?.id||1,nom:'',cat:'Certificat',echeance:'',statut:'Valide',notes:''})},icon('plus',14),' Ajouter')
+    )
+  ));
+  const fd=filterByVessel(state.documents);
+  const expired=fd.filter(d=>d.echeance&&d.echeance<today()&&d.statut!=='Archivé');
+  const soon=fd.filter(d=>{if(!d.echeance||d.statut==='Archivé')return false;const diff=(new Date(d.echeance)-new Date())/(86400000);return diff>=0&&diff<=30;});
+  const stats=S('div',{className:'stats'});
+  stats.appendChild(statCard('Total docs',fd.length,'file','#2563eb'));
+  stats.appendChild(statCard('Expirés',expired.length,'alert',expired.length?'#ef4444':'#22c55e'));
+  stats.appendChild(statCard('Expire < 30j',soon.length,'clock',soon.length?'#f59e0b':'#22c55e'));
+  sec.appendChild(stats);
+  sec.appendChild(S('button',{className:'btn btn-s btn-sm',style:{marginBottom:'10px'},onClick:()=>exportCSV(fd,['nom','cat','echeance','statut','notes'],'documents.csv')},icon('download',12),' CSV'));
+  if(!fd.length){sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucun document.'));return sec;}
+  const tbl=S('table',{});const thead=S('thead',{});const hr=S('tr',{});
+  ['Navire','Document','Catégorie','Échéance','Statut','Fichier','Notes',''].forEach(h=>hr.appendChild(S('th',{},h)));
+  thead.appendChild(hr);tbl.appendChild(thead);
+  const tbody=S('tbody',{});
+  fd.forEach(d=>{
+    const isExp=d.echeance&&d.echeance<today()&&d.statut!=='Archivé';
+    const tr=S('tr',{style:isExp?{background:'#fef2f2'}:{}});
+    tr.appendChild(S('td',{},vesselName(d.nId)));
+    tr.appendChild(S('td',{style:{fontWeight:500}},d.nom));
+    tr.appendChild(S('td',{},d.cat));
+    tr.appendChild(S('td',{style:isExp?{color:'#ef4444',fontWeight:600}:{}},d.echeance||'-'));
+    const sCls=d.statut==='Valide'?'tag-ok':d.statut==='Archivé'?'':'tag-warn';
+    tr.appendChild(S('td',{},S('span',{className:'tag '+sCls},d.statut)));
+    tr.appendChild(S('td',{},d.fichier?S('a',{href:d.fichier,download:d.fichierNom||'document',style:{color:'#2563eb',fontSize:'11px'}},d.fichierNom||'Télécharger'):'—'));
+    tr.appendChild(S('td',{style:{fontSize:'11px'}},d.notes||'-'));
+    const acts=S('td',{});
+    acts.appendChild(S('button',{className:'icon-btn',onClick:()=>openModal('editDoc',{...d})},icon('edit',14)));
+    acts.appendChild(S('button',{className:'icon-btn danger',onClick:()=>{if(confirm('Supprimer ce document ?'))setState(s=>({documents:s.documents.filter(x=>x.id!==d.id)}))}},icon('trash',14)));
+    tr.appendChild(acts);tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);sec.appendChild(tbl);
+  // Modal
+  if(state.modal==='addDoc'||state.modal==='editDoc'){
+    sec.appendChild(renderModal(state.modal==='addDoc'?'Ajouter document':'Modifier',true,()=>{
+      const ed=state.edit;const f=S('div',{className:'form-row'});
+      f.appendChild(makeVesselSel(ed.nId,e=>setState(s=>({edit:{...s.edit,nId:+e.target.value}}))));
+      f.appendChild(makeInput('Nom du document',null,ed.nom,e=>setState(s=>({edit:{...s.edit,nom:e.target.value}}))));
+      f.appendChild(makeSelect('Catégorie',['Certificat','Assurance','Classification','Pavillon','Sécurité','Technique','Autre'],ed.cat,e=>setState(s=>({edit:{...s.edit,cat:e.target.value}}))));
+      f.appendChild(makeInput('Échéance','date',ed.echeance,e=>setState(s=>({edit:{...s.edit,echeance:e.target.value}}))));
+      f.appendChild(makeSelect('Statut',['Valide','Expiré','En cours','Archivé'],ed.statut,e=>setState(s=>({edit:{...s.edit,statut:e.target.value}}))));
+      const fileSec=S('div',{className:'form-full'});
+      fileSec.appendChild(S('label',{className:'form-label'},'Fichier joint'));
+      if(ed.fichier){
+        fileSec.appendChild(S('div',{style:{display:'flex',alignItems:'center',gap:'8px',fontSize:'12px'}},S('span',{},ed.fichierNom||'Fichier joint'),S('button',{className:'btn btn-d btn-sm',onClick:()=>setState(s=>({edit:{...s.edit,fichier:'',fichierNom:''}}))},icon('trash',12),' Supprimer')));
+      }else{
+        const fZone=S('div',{className:'photo-upload-zone',style:{width:'100%',height:'48px',flexDirection:'row',gap:'6px'}});
+        fZone.appendChild(icon('upload',14));fZone.appendChild(S('span',{style:{fontSize:'11px'}},'Cliquer pour ajouter un fichier'));
+        const fInp=S('input',{type:'file',style:{display:'none'}});
+        fInp.addEventListener('change',ev=>{const file=ev.target.files[0];if(!file||file.size>10*1024*1024)return;const r=new FileReader();r.onload=re=>setState(s=>({edit:{...s.edit,fichier:re.target.result,fichierNom:file.name}}));r.readAsDataURL(file);});
+        fZone.addEventListener('click',()=>fInp.click());fZone.appendChild(fInp);
+        fileSec.appendChild(fZone);
+      }
+      f.appendChild(fileSec);
+      const nw=makeInput('Notes',null,ed.notes,e=>setState(s=>({edit:{...s.edit,notes:e.target.value}})),{textarea:true});nw.className='form-full';f.appendChild(nw);
+      const btns=S('div',{className:'form-full',style:{display:'flex',justifyContent:'flex-end',gap:'8px',marginTop:'8px'}});
+      btns.appendChild(S('button',{className:'btn btn-s',onClick:closeModal},'Annuler'));
+      btns.appendChild(S('button',{className:'btn btn-p',onClick:()=>{const e=state.edit;if(!e.nom)return;if(state.modal==='addDoc')setState(s=>({documents:[...s.documents,{...e,id:nId(s.documents)}],modal:null,edit:null}));else setState(s=>({documents:s.documents.map(d=>d.id===e.id?{...e}:d),modal:null,edit:null}))}},icon('save',14),' Enregistrer'));
+      f.appendChild(btns);return f;
+    }));
+  }
+  return sec;
+}
+
+// ─── Part 11: Réglementaire + Sidebar + render() + init ───
+function pgReglementaire(){
+  const sec=S('div',{className:'page'});
+  sec.appendChild(S('div',{className:'page-head'},
+    S('h2',{},'🛡️ Réglementaire'),
+    S('div',{style:{display:'flex',gap:'8px'}},
+      makeVesselFilter(),
+      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addRegl',{nId:state.vessels[0]?.id||1,nom:'',cat:'Sécurité',eauxFr:true,eauxEtr:false,echeance:'',statut:'Conforme',notes:''})},icon('plus',14),' Ajouter')
+    )
+  ));
+  const fr=filterByVessel(state.reglementaire);
+  const conforme=fr.filter(r=>r.statut==='Conforme').length;
+  const nonConf=fr.filter(r=>r.statut==='Non conforme').length;
+  const stats=S('div',{className:'stats'});
+  stats.appendChild(statCard('Obligations',fr.length,'shield','#2563eb'));
+  stats.appendChild(statCard('Conformes',conforme,'check','#22c55e'));
+  stats.appendChild(statCard('Non conformes ⚠️',nonConf,'alert','#ef4444'));
+  sec.appendChild(stats);
+  sec.appendChild(S('button',{className:'btn btn-s btn-sm',style:{marginBottom:'10px'},onClick:()=>exportCSV(fr,['nom','cat','eauxFr','eauxEtr','echeance','statut','notes'],'reglementaire.csv')},icon('download',12),' CSV'));
+  if(!fr.length){sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucune obligation.'));return sec;}
+  const tbl=S('table',{});const thead=S('thead',{});const hr=S('tr',{});
+  ['Navire','Obligation','Catégorie','Eaux FR','Eaux Étr.','Échéance','Statut','Notes',''].forEach(h=>hr.appendChild(S('th',{},h)));
+  thead.appendChild(hr);tbl.appendChild(thead);
+  const tbody=S('tbody',{});
+  fr.forEach(r=>{
+    const isNc=r.statut==='Non conforme';
+    const tr=S('tr',{style:isNc?{background:'#fef2f2'}:{}});
+    tr.appendChild(S('td',{},vesselName(r.nId)));
+    tr.appendChild(S('td',{style:{fontWeight:500}},r.nom));
+    tr.appendChild(S('td',{},r.cat));
+    tr.appendChild(S('td',{},r.eauxFr?'✅':'—'));
+    tr.appendChild(S('td',{},r.eauxEtr?'✅':'—'));
+    tr.appendChild(S('td',{},r.echeance||'-'));
+    const sCls=r.statut==='Conforme'?'tag-ok':r.statut==='Non conforme'?'tag-warn':'tag-pending';
+    tr.appendChild(S('td',{},S('span',{className:'tag '+sCls},r.statut)));
+    tr.appendChild(S('td',{style:{fontSize:'11px'}},r.notes||'-'));
+    const acts=S('td',{});
+    acts.appendChild(S('button',{className:'icon-btn',onClick:()=>openModal('editRegl',{...r})},icon('edit',14)));
+    acts.appendChild(S('button',{className:'icon-btn danger',onClick:()=>{if(confirm('Supprimer cet élément réglementaire ?'))setState(s=>({reglementaire:s.reglementaire.filter(x=>x.id!==r.id)}))}},icon('trash',14)));
+    tr.appendChild(acts);tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);sec.appendChild(tbl);
+  // Modal
+  if(state.modal==='addRegl'||state.modal==='editRegl'){
+    sec.appendChild(renderModal(state.modal==='addRegl'?'Ajouter obligation':'Modifier',true,()=>{
+      const ed=state.edit;const f=S('div',{className:'form-row'});
+      f.appendChild(makeVesselSel(ed.nId,e=>setState(s=>({edit:{...s.edit,nId:+e.target.value}}))));
+      f.appendChild(makeInput('Nom obligation',null,ed.nom,e=>setState(s=>({edit:{...s.edit,nom:e.target.value}}))));
+      f.appendChild(makeSelect('Catégorie',['Sécurité','Environnement','Navigation','Équipage','Fiscalité','Autre'],ed.cat,e=>setState(s=>({edit:{...s.edit,cat:e.target.value}}))));
+      f.appendChild(makeInput('Échéance','date',ed.echeance,e=>setState(s=>({edit:{...s.edit,echeance:e.target.value}}))));
+      f.appendChild(makeSelect('Statut',['Conforme','Non conforme','En cours','N/A'],ed.statut,e=>setState(s=>({edit:{...s.edit,statut:e.target.value}}))));
+      const chkFr=S('div',{className:'form-group'});
+      chkFr.appendChild(S('label',{style:{display:'flex',alignItems:'center',gap:'6px'}},
+        S('input',{type:'checkbox',checked:ed.eauxFr,onchange:e=>setState(s=>({edit:{...s.edit,eauxFr:e.target.checked}}))}),
+        'Eaux françaises'
+      ));f.appendChild(chkFr);
+      const chkEtr=S('div',{className:'form-group'});
+      chkEtr.appendChild(S('label',{style:{display:'flex',alignItems:'center',gap:'6px'}},
+        S('input',{type:'checkbox',checked:ed.eauxEtr,onchange:e=>setState(s=>({edit:{...s.edit,eauxEtr:e.target.checked}}))}),
+        'Eaux étrangères'
+      ));f.appendChild(chkEtr);
+      const fileSec=S('div',{className:'form-full'});
+      fileSec.appendChild(S('label',{className:'form-label'},'Fichier joint'));
+      if(ed.fichier){
+        fileSec.appendChild(S('div',{style:{display:'flex',alignItems:'center',gap:'8px',fontSize:'12px'}},S('span',{},ed.fichierNom||'Fichier joint'),S('button',{className:'btn btn-d btn-sm',onClick:()=>setState(s=>({edit:{...s.edit,fichier:'',fichierNom:''}}))},icon('trash',12),' Supprimer')));
+      }else{
+        const fZone=S('div',{className:'photo-upload-zone',style:{width:'100%',height:'48px',flexDirection:'row',gap:'6px'}});
+        fZone.appendChild(icon('upload',14));fZone.appendChild(S('span',{style:{fontSize:'11px'}},'Cliquer pour ajouter un fichier'));
+        const fInp=S('input',{type:'file',style:{display:'none'}});
+        fInp.addEventListener('change',ev=>{const file=ev.target.files[0];if(!file||file.size>10*1024*1024)return;const r=new FileReader();r.onload=re=>setState(s=>({edit:{...s.edit,fichier:re.target.result,fichierNom:file.name}}));r.readAsDataURL(file);});
+        fZone.addEventListener('click',()=>fInp.click());fZone.appendChild(fInp);
+        fileSec.appendChild(fZone);
+      }
+      f.appendChild(fileSec);
+      const nw=makeInput('Notes',null,ed.notes,e=>setState(s=>({edit:{...s.edit,notes:e.target.value}})),{textarea:true});nw.className='form-full';f.appendChild(nw);
+      const btns=S('div',{className:'form-full',style:{display:'flex',justifyContent:'flex-end',gap:'8px',marginTop:'8px'}});
+      btns.appendChild(S('button',{className:'btn btn-s',onClick:closeModal},'Annuler'));
+      btns.appendChild(S('button',{className:'btn btn-p',onClick:()=>{const e=state.edit;if(!e.nom)return;if(state.modal==='addRegl')setState(s=>({reglementaire:[...s.reglementaire,{...e,id:nId(s.reglementaire)}],modal:null,edit:null}));else setState(s=>({reglementaire:s.reglementaire.map(r=>r.id===e.id?{...e}:r),modal:null,edit:null}))}},icon('save',14),' Enregistrer'));
+      f.appendChild(btns);return f;
+    }));
+  }
+  return sec;
+}
+
+// ─── Navigation & Render ───
+const NAV=[
+  {id:'dashboard',label:'Tableau de bord',ic:'anchor'},
+  {section:'Technique & Maintenance'},
+  {id:'flotte',label:'Flotte & Équipage',ic:'sail'},
+  {id:'composants',label:'Composants',ic:'box'},
+  {id:'maintenance',label:'Maintenance',ic:'wrench'},
+  {id:'inventaire',label:'Inventaire pièces',ic:'package'},
+  {id:'journal',label:'Journal de bord',ic:'book'},
+  {section:'Commercial'},
+  {id:'charter',label:'Charter & APA',ic:'ship'},
+  {id:'documents',label:'Documents',ic:'file'},
+  {id:'reglementaire',label:'Réglementaire',ic:'shield'},
+  {section:'Finance & Comptabilité'},
+  {id:'couts',label:'Suivi des coûts',ic:'dollar'},
+  {id:'compta',label:'Comptabilité',ic:'calc'}
+];
+const PAGES={dashboard:pgDashboard,flotte:pgFlotte,composants:pgComposants,maintenance:pgMaint,couts:pgCouts,charter:pgCharter,compta:pgCompta,inventaire:pgInventaire,journal:pgJournal,documents:pgDocuments,reglementaire:pgReglementaire};
+
+function render(){
+  // Save focus state before re-render
+  const ae=document.activeElement;
+  let focusInfo=null;
+  if(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'||ae.tagName==='SELECT')){
+    const modal=ae.closest('.modal');
+    const parent=ae.parentElement;
+    const label=parent?parent.querySelector('.form-label,.form-group label,label'):null;
+    focusInfo={
+      tag:ae.tagName,type:ae.type||'',labelText:label?label.textContent:'',
+      selStart:ae.selectionStart,selEnd:ae.selectionEnd,val:ae.value
+    };
+  }
+  // Save modal scroll position
+  const oldModal=document.querySelector('.modal');
+  const modalScrollTop=oldModal?oldModal.scrollTop:0;
+  // Save main scroll position
+  const oldMain=document.querySelector('.main');
+  const mainScrollTop=oldMain?oldMain.scrollTop:0;
+  const app=document.getElementById('app');
+  app.innerHTML='';
+
+  // Login screen
+  if(!state.currentUser){
+    const loginScreen=S('div',{style:{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',background:'linear-gradient(135deg, #2563eb 0%, #1e40af 100%)',padding:'20px',boxSizing:'border-box'}});
+    const loginCard=S('div',{style:{background:'#fff',borderRadius:'16px',padding:'48px',maxWidth:'600px',width:'100%',boxShadow:'0 20px 60px rgba(0,0,0,.3)',textAlign:'center'}});
+    loginCard.appendChild(S('div',{style:{fontSize:'48px',marginBottom:'16px'}},'⚓'));
+    loginCard.appendChild(S('h1',{style:{fontSize:'28px',fontWeight:700,color:'#1e293b',marginBottom:'8px'}},'GMAO Yacht Fleet'));
+    if(state.loginPendingUser){
+      const pendingU=USERS.find(u=>u.id===state.loginPendingUser);
+      loginCard.appendChild(S('p',{style:{fontSize:'14px',color:'#64748b',marginBottom:'24px'}},'Mot de passe pour '+(pendingU?pendingU.nom:'')));
+      const errMsg=state.loginError?S('div',{style:{color:'#dc2626',fontSize:'13px',marginBottom:'12px'}},'Mot de passe incorrect'):null;
+      if(errMsg)loginCard.appendChild(errMsg);
+      const pwdInp=S('input',{type:'password',placeholder:'Mot de passe',autocomplete:'current-password',style:{width:'100%',maxWidth:'300px',padding:'12px 16px',border:'1px solid #e2e8f0',borderRadius:'8px',fontSize:'16px',marginBottom:'16px',boxSizing:'border-box'}});
+      pwdInp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();tryLogin()}});
+      function tryLogin(){
+        const pwd=pwdInp.value;
+        if(checkUserPassword(state.loginPendingUser,pwd)){
+          const u=USERS.find(u=>u.id===state.loginPendingUser);
+          setCurrentUser(u.id);state.currentUser=u;
+          setState({filterNav:u.vesselIds.length===1?String(u.vesselIds[0]):'',loginPendingUser:null,loginError:false});
+        }else{
+          setState({loginError:true});
+        }
+      }
+      loginCard.appendChild(pwdInp);
+      const btnRow=S('div',{style:{display:'flex',gap:'8px',justifyContent:'center'}});
+      btnRow.appendChild(S('button',{style:{padding:'10px 20px',border:'1px solid #e2e8f0',borderRadius:'8px',background:'#fff',cursor:'pointer',fontSize:'13px'},onClick:()=>setState({loginPendingUser:null,loginError:false})},'Retour'));
+      btnRow.appendChild(S('button',{style:{padding:'10px 20px',border:'none',borderRadius:'8px',background:'#0ea5e9',color:'#fff',cursor:'pointer',fontSize:'13px',fontWeight:600},onClick:tryLogin},'Valider'));
+      loginCard.appendChild(btnRow);
+    }else{
+      loginCard.appendChild(S('p',{style:{fontSize:'14px',color:'#64748b',marginBottom:'32px'}},'Sélectionnez votre profil utilisateur'));
+      const grid=S('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(140px, 1fr))',gap:'12px',marginBottom:'24px'}});
+      USERS.forEach(u=>{
+        const btn=S('button',{style:{padding:'16px',border:'1px solid #e2e8f0',borderRadius:'12px',background:'#fff',cursor:'pointer',transition:'all .15s',fontSize:'13px',fontWeight:500,color:'#1e293b'}});
+        btn.appendChild(S('div',{style:{fontSize:'32px',marginBottom:'8px'}},u.role==='admin'?'👤':'⛵'));
+        btn.appendChild(S('div',{style:{fontWeight:600,marginBottom:'4px'}},u.nom));
+        const vessels=state.vessels.filter(v=>u.vesselIds.includes(v.id));
+        if(vessels.length===1){
+          btn.appendChild(S('div',{style:{fontSize:'11px',color:'#64748b'}},vessels[0].nom));
+        }else{
+          btn.appendChild(S('div',{style:{fontSize:'11px',color:'#64748b'}},'Tous les navires'));
+        }
+        btn.addEventListener('mouseover',()=>{btn.style.borderColor='#0ea5e9';btn.style.background='#f0f9ff'});
+        btn.addEventListener('mouseout',()=>{btn.style.borderColor='#e2e8f0';btn.style.background='#fff'});
+        btn.addEventListener('click',()=>setState({loginPendingUser:u.id,loginError:false}));
+        grid.appendChild(btn);
+      });
+      loginCard.appendChild(grid);
+      loginCard.appendChild(S('p',{style:{fontSize:'12px',color:'#94a3b8'}},'Mot de passe requis selon le profil'));
+    }
+    loginScreen.appendChild(loginCard);
+    app.appendChild(loginScreen);
+    return;
+  }
+
+  // Force vessel filter for single-vessel users
+  const user=state.currentUser;
+  if(user&&user.vesselIds.length===1){
+    state.filterNav=String(user.vesselIds[0]);
+  }
+
+  const isMob=window.innerWidth<=768;
+  // Mobile top bar
+  if(isMob){
+    const topbar=S('div',{className:'mob-topbar'});
+    const burger=S('button',{className:'mob-burger',onClick:()=>{
+      document.querySelector('.sidebar').classList.add('mob-open');
+      document.querySelector('.mob-overlay').classList.add('show');
+    }});
+    burger.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
+    topbar.appendChild(burger);
+    const curNav=NAV.find(n=>n.id===state.page);
+    topbar.appendChild(S('h2',null,curNav?curNav.label:'GMAO Yacht'));
+    topbar.appendChild(S('div',{className:'sidebar-logo',style:{width:'28px',height:'28px',padding:'4px',borderRadius:'7px'}},icon('anchor',16)));
+    app.appendChild(topbar);
+    const overlay=S('div',{className:'mob-overlay',onClick:()=>{
+      document.querySelector('.sidebar').classList.remove('mob-open');
+      document.querySelector('.mob-overlay').classList.remove('show');
+    }});
+    app.appendChild(overlay);
+  }
+  // Sidebar
+  const sidebar=S('div',{className:'sidebar'});
+  const header=S('div',{className:'sidebar-header'});
+  header.appendChild(S('div',{className:'sidebar-logo'},icon('anchor',20)));
+  const brand=S('div',{className:'sidebar-brand'});
+  brand.appendChild(S('h2',null,'GMAO Yacht'));
+  brand.appendChild(S('p',null,'Flotte'));
+  header.appendChild(brand);
+  sidebar.appendChild(header);
+  const nav=S('nav');
+  NAV.forEach(n=>{
+    if(n.section){
+      nav.appendChild(S('div',{className:'nav-section'},n.section));
+      return;
+    }
+    const active=state.page===n.id;
+    const btn=S('button',{className:'nav-btn'+(active?' active':''),onClick:()=>{
+      setState({page:n.id});
+      if(isMob){document.querySelector('.sidebar').classList.remove('mob-open');document.querySelector('.mob-overlay').classList.remove('show')}
+    }});
+    btn.appendChild(icon(n.ic,16));
+    btn.appendChild(document.createTextNode(n.label));
+    nav.appendChild(btn);
+  });
+  sidebar.appendChild(nav);
+  // Cloud + Save/Load bar
+  const footer=S('div',{className:'sidebar-footer'});
+  // User info + logout
+  if(state.currentUser){
+    const userInfo=S('div',{style:{padding:'8px 16px',borderBottom:'1px solid #e2e8f0',display:'flex',justifyContent:'space-between',alignItems:'center'}});
+    userInfo.appendChild(S('span',{style:{fontSize:'13px',color:'#334155',fontWeight:500}},state.currentUser.nom));
+    userInfo.appendChild(S('button',{className:'btn btn-s btn-sm',onClick:logout},'Déconnexion'));
+    footer.appendChild(userInfo);
+  }
+  // Cloud badge
+  const cloudBadge=S('div',{id:'cloud-badge',className:'cloud-badge off',onClick:()=>setState({showCloudCfg:!state.showCloudCfg})});
+  footer.appendChild(cloudBadge);
+  // Cloud config panel
+  if(state.showCloudCfg){
+    const cfg=S('div',{className:'cloud-cfg'});
+    cfg.appendChild(S('div',{style:{fontWeight:600,marginBottom:'4px'}},'☁ Connexion Google'));
+    cfg.appendChild(S('div',{style:{color:'#64748b',marginBottom:'4px'}},'Collez l\'URL de votre Apps Script :'));
+    const urlInp=S('input',{type:'text',value:getCloudUrl(),placeholder:'https://script.google.com/macros/s/…/exec',onInput:e=>setCloudUrl(e.target.value.trim())});
+    cfg.appendChild(urlInp);
+    const cfgBtns=S('div',{style:{display:'flex',gap:'6px',marginTop:'6px'}});
+    cfgBtns.appendChild(S('button',{className:'btn btn-p btn-sm',onClick:()=>{cloudLoad().then(ok=>{if(ok)alert('Données chargées depuis Google Sheets !');else alert('Aucune donnée trouvée ou erreur.');setState({showCloudCfg:false})})}},icon('download',11),' Charger'));
+    cfgBtns.appendChild(S('button',{className:'btn btn-s btn-sm',onClick:()=>{cloudSave();setState({showCloudCfg:false})}},icon('upload',11),' Envoyer'));
+    cfg.appendChild(cfgBtns);
+    if(getCloudUrl()){
+      cfgBtns.appendChild(S('button',{className:'btn btn-s btn-sm',style:{color:'#dc2626'},onClick:()=>{setCloudUrl('');setState({showCloudCfg:false})}},icon('x',11),' Déconnecter'));
+    }
+    footer.appendChild(cfg);
+  }
+  const saveBar=S('div',{className:'save-bar'});
+  saveBar.appendChild(S('button',{className:'btn btn-s btn-sm',style:{flex:1},onClick:saveData},icon('download',12),' Export JSON'));
+  const loadLbl=S('label',{className:'btn btn-s btn-sm',style:{flex:1,cursor:'pointer',textAlign:'center'}},icon('upload',12),' Import JSON');
+  const loadInp=S('input',{type:'file',accept:'.json',style:{display:'none'},onchange:loadData});
+  loadLbl.appendChild(loadInp);
+  saveBar.appendChild(loadLbl);
+  footer.appendChild(saveBar);
+  sidebar.appendChild(footer);
+  app.appendChild(sidebar);
+  // Main content
+  const main=S('div',{className:'main'});
+  const mainInner=S('div',{className:'main-inner'});
+  const pgFn=PAGES[state.page]||pgDashboard;
+  mainInner.appendChild(pgFn());
+  main.appendChild(mainInner);
+  app.appendChild(main);
+  // Restore focus
+  if(focusInfo){
+    let target=null;
+    if(focusInfo.labelText){
+      const labels=app.querySelectorAll('.form-label,.form-group label,label');
+      for(const lbl of labels){
+        if(lbl.textContent===focusInfo.labelText){
+          const container=lbl.parentElement;
+          target=container.querySelector(focusInfo.tag.toLowerCase());
+          if(target)break;
+        }
+      }
+    }
+    if(!target&&focusInfo.tag){
+      const inputs=app.querySelectorAll('.modal '+focusInfo.tag.toLowerCase());
+      for(const inp of inputs){if(inp.value===focusInfo.val){target=inp;break;}}
+    }
+    if(target){
+      target.focus();
+      if(focusInfo.selStart!=null&&target.setSelectionRange){
+        try{target.setSelectionRange(focusInfo.selStart,focusInfo.selEnd);}catch(e){}
+      }
+    }
+  }
+  // Restore modal scroll position
+  const newModal=document.querySelector('.modal');
+  if(newModal&&modalScrollTop)newModal.scrollTop=modalScrollTop;
+  // Restore main scroll position
+  const newMain=document.querySelector('.main');
+  if(newMain&&mainScrollTop)newMain.scrollTop=mainScrollTop;
+}
+
+// Initialize current user
+state.currentUser=getCurrentUser();
+
+// Initial render
+render();
+updateCloudBadge();
+// Auto-load from cloud if configured
+if(getCloudUrl()){cloudLoad()}
+// Re-render on resize to toggle mobile/desktop layout
+// Re-render on resize only if width changed (avoids Android keyboard height change re-renders)
+let resizeTimer,lastWidth=window.innerWidth;
+window.addEventListener('resize',()=>{
+  if(window.innerWidth===lastWidth)return;
+  lastWidth=window.innerWidth;
+  // Don't re-render if an input is focused (avoids losing focus on Android keyboard)
+  const ae=document.activeElement;
+  if(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'))return;
+  clearTimeout(resizeTimer);resizeTimer=setTimeout(render,200);
+})
+// PWA: Register service worker
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+</script>
+</body>
+</html>
