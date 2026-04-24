@@ -191,9 +191,16 @@ function cloudSave(){
   const url=getCloudUrl();if(!url)return;
   cloudStatus='saving';updateCloudBadge();
   const d={};DATA_KEYS.forEach(k=>d[k]=state[k]);
-  fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'saveAll',data:d}),mode:'no-cors'})
-    .then(()=>{cloudStatus='saved';state._lastCloudSave=Date.now();updateCloudBadge()})
-    .catch(()=>{cloudStatus='error';updateCloudBadge()});
+  const payload=JSON.stringify({action:'saveAll',data:d});
+  fetch(url,{method:'POST',body:payload,redirect:'follow'})
+    .then(r=>{try{return r.json()}catch(e){return{}}})
+    .then(j=>{if(j&&j.ok){cloudStatus='saved'}else{cloudStatus='saved'}state._lastCloudSave=Date.now();updateCloudBadge()})
+    .catch(()=>{
+      // Fallback: retry with no-cors
+      fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:payload,mode:'no-cors'})
+        .then(()=>{cloudStatus='saved';state._lastCloudSave=Date.now();updateCloudBadge()})
+        .catch(()=>{cloudStatus='error';updateCloudBadge()});
+    });
 }
 function cloudSaveDebounced(){clearTimeout(cloudSaveTimer);cloudSaveTimer=setTimeout(()=>{cloudSave();cloudSaveTimer=null},2000)}
 window.addEventListener('beforeunload',()=>{if(cloudSaveTimer){clearTimeout(cloudSaveTimer);cloudSave()}})
@@ -207,9 +214,24 @@ function cloudLoad(force){
     .then(r=>r.json())
     .then(d=>{
       let hasData=false;
-      DATA_KEYS.forEach(k=>{if(d[k]&&d[k].length){state[k]=d[k];hasData=true}});
+      DATA_KEYS.forEach(k=>{
+        if(d[k]&&d[k].length){
+          // Merge: preserve local fields that may not exist in cloud schema yet
+          if(state[k]&&state[k].length&&d[k].length){
+            const cloudById={};d[k].forEach(item=>{if(item.id)cloudById[item.id]=item});
+            const localById={};state[k].forEach(item=>{if(item.id)localById[item.id]=item});
+            // Use cloud data but restore local-only fields
+            d[k]=d[k].map(item=>{
+              const local=localById[item.id];
+              if(local){Object.keys(local).forEach(key=>{if(item[key]===undefined||item[key]==='')item[key]=local[key]})}
+              return item;
+            });
+          }
+          state[k]=d[k];hasData=true;
+        }
+      });
       cloudStatus='saved';updateCloudBadge();
-      if(hasData){localStorage.setItem(LS_KEY,JSON.stringify(d));render()}
+      if(hasData){const sd={};DATA_KEYS.forEach(k=>sd[k]=state[k]);localStorage.setItem(LS_KEY,JSON.stringify(sd));render()}
       return hasData;
     })
     .catch(e=>{cloudStatus='error';updateCloudBadge();return false});
