@@ -553,6 +553,15 @@ reglementaire:[
 
 state=JSON.parse(JSON.stringify(INIT));
 loadPersistedState();
+// Nettoyage APA et revenus orphelins (charters supprimés)
+(function cleanOrphanedCharterData(){
+  if(!state.charters||!state.apaDep||!state.revenus)return;
+  const ids=new Set(state.charters.map(c=>c.id));
+  const apa0=state.apaDep.length,rev0=state.revenus.length;
+  state.apaDep=state.apaDep.filter(a=>ids.has(a.charterId));
+  state.revenus=state.revenus.filter(r=>ids.has(r.chartId));
+  if(state.apaDep.length<apa0||state.revenus.length<rev0)persistState();
+})();
 // Auto-création tâches hivernage manquantes
 (function ensureHivernageTasks(){
   if(!state.vessels||!state.maint)return;
@@ -654,7 +663,11 @@ function pgFlotte(){
     }else{
       hdrEl.appendChild(S('span',{style:{fontSize:'40px'}},v.img));
     }
-    hdrEl.appendChild(S('div',null,S('h3',{style:{fontSize:'16px',fontWeight:700}},v.nom),S('p',{style:{fontSize:'12px',color:'#475569',margin:'2px 0'}},(v.type==='moteur'?'Moteur':'Voilier')+' — '+v.longueur+'m'),badge(v.statut,v.statut==='actif'?'green':'orange')));
+    hdrEl.appendChild(S('div',{style:{flex:'1'}},S('h3',{style:{fontSize:'16px',fontWeight:700}},v.nom),S('p',{style:{fontSize:'12px',color:'#475569',margin:'2px 0'}},(v.type==='moteur'?'Moteur':'Voilier')+' — '+v.longueur+'m'),badge(v.statut,v.statut==='actif'?'green':'orange')));
+    hdrEl.appendChild(S('div',{style:{display:'flex',gap:'2px',alignSelf:'flex-start'}},
+      S('button',{className:'icon-btn',style:{color:'#2563eb'},onClick:()=>openModal('editV',{...v})},icon('edit',14)),
+      S('button',{className:'icon-btn danger',style:{color:'#dc2626'},onClick:()=>{if(confirm('Supprimer ce navire ?'))setState(s=>({vessels:s.vessels.filter(x=>x.id!==v.id)}))}},icon('trash',14))
+    ));
     card.appendChild(hdrEl);
     const body=S('div',{style:{padding:'14px'}});
     body.appendChild(S('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px',fontSize:'12px'}},
@@ -681,11 +694,6 @@ function pgFlotte(){
         )
       ));
     });
-    // Footer
-    body.appendChild(S('div',{style:{display:'flex',justifyContent:'flex-end',gap:'4px',marginTop:'8px',paddingTop:'8px',borderTop:'1px solid #f1f5f9'}},
-      S('button',{className:'icon-btn',style:{color:'#2563eb'},onClick:()=>openModal('editV',{...v})},icon('edit',14)),
-      S('button',{className:'icon-btn danger',style:{color:'#dc2626'},onClick:()=>{if(confirm('Supprimer ce navire ?'))setState(s=>({vessels:s.vessels.filter(x=>x.id!==v.id)}))}},icon('trash',14))
-    ));
     card.appendChild(body);grid.appendChild(card);
   });
   sec.appendChild(grid);
@@ -1317,7 +1325,7 @@ function pgCharter(){
     ));
     const acts=S('div',{style:{display:'flex',gap:'2px',marginLeft:'4px'}});
     acts.appendChild(S('button',{className:'icon-btn',onClick:()=>openModal('editCharter',{...ch})},icon('edit',14)));
-    acts.appendChild(S('button',{className:'icon-btn danger',onClick:()=>{if(confirm('Supprimer ce charter ?'))setState(s=>({charters:s.charters.filter(x=>x.id!==ch.id)}))}},icon('trash',14)));
+    acts.appendChild(S('button',{className:'icon-btn danger',onClick:()=>{if(confirm('Supprimer ce charter ?'))setState(s=>({charters:s.charters.filter(x=>x.id!==ch.id),apaDep:s.apaDep.filter(x=>x.charterId!==ch.id),revenus:s.revenus.filter(x=>x.chartId!==ch.id)}))}},icon('trash',14)));
     hRight.appendChild(acts);
     hdr.appendChild(hRight);
     card.appendChild(hdr);
@@ -2018,6 +2026,7 @@ function render(){
   if(isMob){
     const topbar=S('div',{className:'mob-topbar'});
     const burger=S('button',{className:'mob-burger',onClick:()=>{
+      state.mobSidebarOpen=true;
       document.querySelector('.sidebar').classList.add('mob-open');
       document.querySelector('.mob-overlay').classList.add('show');
     }});
@@ -2028,13 +2037,15 @@ function render(){
     topbar.appendChild(S('div',{className:'sidebar-logo',style:{width:'28px',height:'28px',padding:'4px',borderRadius:'7px'}},icon('anchor',16)));
     app.appendChild(topbar);
     const overlay=S('div',{className:'mob-overlay',onClick:()=>{
+      state.mobSidebarOpen=false;
       document.querySelector('.sidebar').classList.remove('mob-open');
       document.querySelector('.mob-overlay').classList.remove('show');
     }});
     app.appendChild(overlay);
   }
   // Sidebar
-  const sidebar=S('div',{className:'sidebar'});
+  const sidebar=S('div',{className:'sidebar'+(isMob&&state.mobSidebarOpen?' mob-open':'')});
+  if(isMob&&state.mobSidebarOpen){const ov=document.querySelector('.mob-overlay');if(ov)ov.classList.add('show')}
   const header=S('div',{className:'sidebar-header'});
   header.appendChild(S('div',{className:'sidebar-logo'},icon('anchor',20)));
   const brand=S('div',{className:'sidebar-brand'});
@@ -2051,7 +2062,7 @@ function render(){
     const active=state.page===n.id;
     const btn=S('button',{className:'nav-btn'+(active?' active':''),onClick:()=>{
       setState({page:n.id});
-      if(isMob){document.querySelector('.sidebar').classList.remove('mob-open');document.querySelector('.mob-overlay').classList.remove('show')}
+      if(isMob){state.mobSidebarOpen=false;document.querySelector('.sidebar').classList.remove('mob-open');document.querySelector('.mob-overlay').classList.remove('show')}
     }});
     btn.appendChild(icon(n.ic,16));
     btn.appendChild(document.createTextNode(n.label));
