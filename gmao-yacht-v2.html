@@ -257,7 +257,6 @@ function hideUploadToast(){
 async function uploadPhotoToCloud(base64DataUrl,fileName){
   const url=getCloudUrl();
   if(!url)return base64DataUrl;
-  showUploadToast('Chargement de '+(fileName||'fichier')+'…');
   const parts=base64DataUrl.split(',');
   const mimeMatch=parts[0].match(/data:(.*?);/);
   const mimeType=mimeMatch?mimeMatch[1]:'image/jpeg';
@@ -267,13 +266,12 @@ async function uploadPhotoToCloud(base64DataUrl,fileName){
   // Try with redirect follow first, then no-cors fallback
   try{
     const resp=await fetch(url,{method:'POST',redirect:'follow',body:payload});
-    try{const d=await resp.json();if(d.ok&&d.url){hideUploadToast();return d.url}if(d.ok&&d.driveUrl){hideUploadToast();return d.driveUrl}}catch(e){}
+    try{const d=await resp.json();if(d.ok&&d.url)return d.url;if(d.ok&&d.driveUrl)return d.driveUrl;}catch(e){}
   }catch(e){}
   // Fallback: no-cors (file still gets uploaded but we can't read the URL)
   try{
     await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:payload,mode:'no-cors'});
   }catch(e){}
-  hideUploadToast();
   return base64DataUrl;
 }
 
