@@ -745,16 +745,17 @@ function pgFlotte(){
     body.appendChild(S('div',{style:{marginTop:'10px',paddingTop:'10px',borderTop:'1px solid #f1f5f9'}},
       S('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'6px'}},
         S('span',{style:{fontSize:'12px',fontWeight:600,color:'#475569'}},'Équipage ('+crew.length+')'),
-        S('button',{className:'btn btn-s btn-sm',onClick:()=>openModal('addCrew',{nId:v.id,nom:'',role:'',tel:'',email:'',actif:true,numMarin:'',numPasseport:'',permanent:true,dateDebut:'',dateFin:'',photo:''})},icon('plus',12),' Ajouter')
+        S('button',{className:'btn btn-s btn-sm',onClick:()=>openModal('addCrew',{nId:v.id,nom:'',role:'',tel:'',email:'',actif:true,numMarin:'',numPasseport:'',permanent:true,dateDebut:'',dateFin:'',photo:'',salaire:0,charges:0})},icon('plus',12),' Ajouter')
       )
     ));
     crew.forEach(c=>{
       const avatar=c.photo?S('img',{src:c.photo,style:{width:'28px',height:'28px',borderRadius:'50%',objectFit:'cover',flexShrink:'0'}}):S('div',{style:{width:'28px',height:'28px',borderRadius:'50%',background:'#e2e8f0',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',fontWeight:600,color:'#64748b',flexShrink:'0'}},c.nom?c.nom.charAt(0).toUpperCase():'?');
+      const salInfo=c.salaire?S('span',{style:{color:'#16a34a',fontSize:'11px',marginLeft:'4px'}},fmt(c.salaire)+(c.charges?' + '+fmt(c.charges)+' charges':'')):null;
       body.appendChild(S('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'4px 0',fontSize:'12px',gap:'8px'}},
-        S('div',{style:{display:'flex',alignItems:'center',gap:'8px'}},avatar,S('span',{style:{fontWeight:500}},c.nom),' ',S('span',{style:{color:'#64748b'}},'('+c.role+')'),(c.permanent===false&&c.dateFin)?' — '+c.dateFin:c.permanent!==false?' (permanent)':''),
+        S('div',{style:{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap'}},avatar,S('span',{style:{fontWeight:500}},c.nom),' ',S('span',{style:{color:'#64748b'}},'('+c.role+')'),(c.permanent===false&&c.dateFin)?' — '+c.dateFin:c.permanent!==false?' (permanent)':'',salInfo),
         S('div',{style:{display:'flex',gap:'2px'}},
           S('button',{className:'icon-btn',style:{color:'#2563eb'},onClick:()=>openModal('editCrew',{...c})},icon('edit',14)),
-          S('button',{className:'icon-btn danger',style:{color:'#dc2626'},onClick:()=>{if(confirm('Supprimer cet équipier ?'))setState(s=>({equipage:s.equipage.filter(x=>x.id!==c.id)}))}},icon('trash',14))
+          S('button',{className:'icon-btn danger',style:{color:'#dc2626'},onClick:()=>{if(confirm('Supprimer cet équipier ?')){const cid=c.id;setState(s=>({equipage:s.equipage.filter(x=>x.id!==cid),couts:s.couts.filter(x=>!(x.crewCostId&&(x.crewCostId.startsWith('crew-sal-'+cid+'-')||x.crewCostId.startsWith('crew-chg-'+cid+'-'))))}))}}},icon('trash',14))
         )
       ));
     });
@@ -822,6 +823,8 @@ function pgFlotte(){
       f.appendChild(makeInput('Email',null,ed.email,e=>setState(s=>({edit:{...s.edit,email:e.target.value}}))));
       f.appendChild(makeInput('N° Marin',null,ed.numMarin,e=>setState(s=>({edit:{...s.edit,numMarin:e.target.value}}))));
       f.appendChild(makeInput('N° Passeport',null,ed.numPasseport,e=>setState(s=>({edit:{...s.edit,numPasseport:e.target.value}}))));
+      f.appendChild(makeInput('Salaire mensuel (€)','number',ed.salaire,e=>setState(s=>({edit:{...s.edit,salaire:+e.target.value}}))));
+      f.appendChild(makeInput('Charges mensuelles (€)','number',ed.charges,e=>setState(s=>({edit:{...s.edit,charges:+e.target.value}}))));
       const permDiv=S('div',{className:'form-group'});
       permDiv.appendChild(S('label',{style:{display:'flex',alignItems:'center',gap:'6px'}},S('input',{type:'checkbox',checked:ed.permanent,onchange:e=>setState(s=>({edit:{...s.edit,permanent:e.target.checked}}))}), 'Permanent'));
       f.appendChild(permDiv);
@@ -1283,11 +1286,59 @@ function pgCouts(){
   const jMiss=fc.filter(c=>c.justif==='Manquant').length;
   const totalC=fc.reduce((s,c)=>s+c.montant,0);
   const stats=S('div',{className:'stats'});
+  // Crew salary totals
+  const crewForCouts=filterByVessel(state.equipage).filter(e=>e.actif&&(e.salaire||e.charges));
+  const totalSal=crewForCouts.reduce((s,c)=>s+(c.salaire||0),0);
+  const totalChg=crewForCouts.reduce((s,c)=>s+(c.charges||0),0);
+  const totalCrew=totalSal+totalChg;
   stats.appendChild(statCard('Total dépenses',fmt(totalC),'anchor','#2563eb'));
   stats.appendChild(statCard('Justifiés',jOk+'/'+fc.length,'check','#22c55e'));
-  stats.appendChild(statCard('En attente',jPend,'clock','#f59e0b'));
+  stats.appendChild(statCard('Masse salariale/mois',fmt(totalCrew),'user','#8b5cf6'));
   stats.appendChild(statCard('Manquants',jMiss,'alert','#ef4444'));
   sec.appendChild(stats);
+  // Crew salary card
+  if(crewForCouts.length){
+    const crewCard=S('div',{className:'card',style:{marginBottom:'12px',padding:'16px'}});
+    const crewHead=S('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'10px'}});
+    crewHead.appendChild(S('div',{style:{fontWeight:600,fontSize:'14px',color:'#1e293b'}},'💰 Masse salariale mensuelle'));
+    const genMo=new Date().toISOString().slice(0,7);
+    const alreadyGen=state.couts.filter(c=>c.crewCostId&&c.crewCostId.endsWith('-'+genMo)).length;
+    const expectedGen=crewForCouts.reduce((n,c)=>(n+(c.salaire?1:0)+(c.charges?1:0)),0);
+    if(alreadyGen>=expectedGen){
+      crewHead.appendChild(S('span',{style:{fontSize:'11px',color:'#22c55e',fontWeight:500}},'✓ Salaires '+genMo+' générés'));
+    }else{
+      crewHead.appendChild(S('button',{className:'btn btn-sm',style:{background:'#8b5cf6',color:'#fff',border:'none'},onClick:()=>{
+        const n=generateCrewCosts(genMo);
+        if(n)alert(n+' entrée(s) de salaire/charges créée(s) pour '+genMo);
+        else alert('Salaires déjà générés pour '+genMo);
+      }},icon('user',12),' Générer salaires '+genMo));
+    }
+    crewCard.appendChild(crewHead);
+    const crewTbl=S('table',{});
+    const cthead=S('thead',{});const chr=S('tr',{});
+    ['Navire','Membre','Rôle','Salaire','Charges','Total'].forEach(h=>chr.appendChild(S('th',{style:['Salaire','Charges','Total'].includes(h)?{textAlign:'right'}:{}},h)));
+    cthead.appendChild(chr);crewTbl.appendChild(cthead);
+    const ctbody=S('tbody',{});
+    crewForCouts.forEach(c=>{
+      const tr=S('tr',{});
+      tr.appendChild(S('td',{},vesselName(c.nId)));
+      tr.appendChild(S('td',{style:{fontWeight:500}},c.nom));
+      tr.appendChild(S('td',{},c.role));
+      tr.appendChild(S('td',{style:{textAlign:'right'}},fmt(c.salaire||0)));
+      tr.appendChild(S('td',{style:{textAlign:'right'}},fmt(c.charges||0)));
+      tr.appendChild(S('td',{style:{textAlign:'right',fontWeight:600}},fmt((c.salaire||0)+(c.charges||0))));
+      ctbody.appendChild(tr);
+    });
+    // Total row
+    const ttr=S('tr',{style:{borderTop:'2px solid #e2e8f0',fontWeight:700}});
+    ttr.appendChild(S('td',{colSpan:'3'},'Total mensuel'));
+    ttr.appendChild(S('td',{style:{textAlign:'right'}},fmt(totalSal)));
+    ttr.appendChild(S('td',{style:{textAlign:'right'}},fmt(totalChg)));
+    ttr.appendChild(S('td',{style:{textAlign:'right',color:'#8b5cf6'}},fmt(totalCrew)));
+    ctbody.appendChild(ttr);
+    crewTbl.appendChild(ctbody);crewCard.appendChild(crewTbl);
+    sec.appendChild(crewCard);
+  }
   // Justif filter
   const filterBar=S('div',{style:{display:'flex',gap:'8px',marginBottom:'10px',flexWrap:'wrap'}});
   ['Tous','Justifié','En attente','Manquant'].forEach(jf=>{
@@ -1574,6 +1625,41 @@ function pgCharter(){
   return sec;
 }
 
+// ─── Génération des salaires mensuels ───
+function generateCrewCosts(month){
+  // month format: "YYYY-MM"
+  const activeCrew=state.equipage.filter(e=>e.actif&&(e.salaire||e.charges));
+  if(!activeCrew.length)return 0;
+  // Check contract dates
+  let count=0;
+  setState(s=>{
+    let newCouts=[...s.couts];
+    activeCrew.forEach(c=>{
+      // Skip if crew not active during this month
+      if(c.dateDebut&&c.dateDebut.slice(0,7)>month)return;
+      if(c.permanent===false&&c.dateFin&&c.dateFin.slice(0,7)<month)return;
+      // Salary entry
+      if(c.salaire){
+        const salKey='crew-sal-'+c.id+'-'+month;
+        if(!newCouts.find(x=>x.crewCostId===salKey)){
+          newCouts.push({id:nId(newCouts),nId:c.nId,cat:'Équipage',desc:'💰 Salaire — '+c.nom+' ('+c.role+')',montant:c.salaire,date:month+'-01',fournisseur:'',justif:'En attente',photos:[],crewCostId:salKey,datePaiement:'',statutPaiement:'En attente'});
+          count++;
+        }
+      }
+      // Charges entry
+      if(c.charges){
+        const chgKey='crew-chg-'+c.id+'-'+month;
+        if(!newCouts.find(x=>x.crewCostId===chgKey)){
+          newCouts.push({id:nId(newCouts),nId:c.nId,cat:'Équipage',desc:'💰 Charges — '+c.nom+' ('+c.role+')',montant:c.charges,date:month+'-01',fournisseur:'',justif:'En attente',photos:[],crewCostId:chgKey,datePaiement:'',statutPaiement:'En attente'});
+          count++;
+        }
+      }
+    });
+    return{couts:newCouts};
+  });
+  return count;
+}
+
 // ─── Comptabilité (monthly extraction) ───
 function pgCompta(){
   const sec=S('div',{className:'page'});
@@ -1631,6 +1717,29 @@ function pgCompta(){
     periodeNom=d0+' — '+d1;
     mCouts=filterByVessel(state.couts).filter(c=>c.date&&c.date>=d0&&c.date<=d1);
     mRevs=filterByVessel(state.revenus).filter(r=>r.date&&r.date>=d0&&r.date<=d1);
+  }
+  // Salary generation button
+  const crewWithSalary=state.equipage.filter(e=>e.actif&&(e.salaire||e.charges));
+  if(crewWithSalary.length){
+    const genMonth=state.comptaMode==='mois'?(state.comptaMois||curMonth):curMonth;
+    const alreadyGenerated=state.couts.filter(c=>c.crewCostId&&c.crewCostId.endsWith('-'+genMonth)).length;
+    const expectedCount=crewWithSalary.reduce((n,c)=>{
+      if(c.dateDebut&&c.dateDebut.slice(0,7)>genMonth)return n;
+      if(c.permanent===false&&c.dateFin&&c.dateFin.slice(0,7)<genMonth)return n;
+      return n+(c.salaire?1:0)+(c.charges?1:0);
+    },0);
+    const salBar=S('div',{style:{display:'flex',gap:'8px',alignItems:'center',marginBottom:'10px',flexWrap:'wrap'}});
+    if(alreadyGenerated>=expectedCount){
+      salBar.appendChild(S('span',{style:{fontSize:'12px',color:'#22c55e'}},icon('check',12)+' Salaires '+genMonth+' générés ('+alreadyGenerated+' entrées)'));
+    }else{
+      salBar.appendChild(S('button',{className:'btn btn-sm',style:{background:'#8b5cf6',color:'#fff',border:'none'},onClick:()=>{
+        const n=generateCrewCosts(genMonth);
+        if(n)alert(n+' entrée(s) de salaire/charges créée(s) pour '+genMonth);
+        else alert('Salaires déjà générés pour '+genMonth);
+      }},icon('user',12),' Générer salaires '+genMonth));
+      if(alreadyGenerated>0)salBar.appendChild(S('span',{style:{fontSize:'11px',color:'#f59e0b'}},alreadyGenerated+'/'+expectedCount+' déjà générés'));
+    }
+    sec.appendChild(salBar);
   }
   const totalDep=mCouts.reduce((s,c)=>s+c.montant,0);
   const totalRev=mRevs.reduce((s,r)=>s+r.montant,0);

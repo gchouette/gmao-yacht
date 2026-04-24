@@ -61,10 +61,10 @@ function jsonToSheet(sheet, data, headers) {
 // ─── Schéma des onglets ───
 const SCHEMAS = {
   vessels: ['id','nom','type','longueur','annee','port','immat','mmsi','callSign','statut','carenage','heures','img','photo'],
-  equipage: ['id','nId','nom','role','tel','email','actif','numMarin','numPasseport','permanent','dateDebut','dateFin','photo'],
+  equipage: ['id','nId','nom','role','tel','email','actif','numMarin','numPasseport','permanent','dateDebut','dateFin','photo','salaire','charges'],
   composants: ['id','nId','famille','sg','nom','marque','modele','serie','install','manuel','photos'],
   maint: ['id','nId','compId','cat','titre','prio','statut','echeance','dateFin','freq','cout','coutReel','assigneA','desc','justif','workflow','photos','recurrence','parentId','checklist','factures','datePaiement','statutPaiement'],
-  couts: ['id','nId','cat','desc','montant','date','fournisseur','justif','chartId','maintId','datePaiement','statutPaiement'],
+  couts: ['id','nId','cat','desc','montant','date','fournisseur','justif','chartId','maintId','crewCostId','datePaiement','statutPaiement'],
   inventaire: ['id','nId','ref','nom','cat','qte','seuil','fournisseur','emplacement','photos'],
   journal: ['id','nId','date','type','hm','mi','meteo','auteur','eq','texte','carb','photos'],
   documents: ['id','nId','nom','cat','echeance','statut','notes','fichier','fichierNom'],
