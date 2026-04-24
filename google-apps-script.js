@@ -64,7 +64,7 @@ const SCHEMAS = {
   equipage: ['id','nId','nom','role','tel','email','actif','numMarin','numPasseport','permanent','dateDebut','dateFin'],
   composants: ['id','nId','famille','sg','nom','marque','modele','serie','install','manuel','photos'],
   maint: ['id','nId','compId','cat','titre','prio','statut','echeance','dateFin','freq','cout','coutReel','assigneA','desc','justif','workflow','photos','recurrence','parentId','checklist','factures'],
-  couts: ['id','nId','cat','desc','montant','date','fournisseur','justif'],
+  couts: ['id','nId','cat','desc','montant','date','fournisseur','justif','chartId'],
   inventaire: ['id','nId','ref','nom','cat','qte','seuil','fournisseur','emplacement'],
   journal: ['id','nId','date','type','hm','mi','meteo','auteur','eq','texte','carb','photos'],
   documents: ['id','nId','nom','cat','echeance','statut','notes'],
