@@ -452,7 +452,7 @@ function photoGallery(photos){
 // ─── UI Builders ───
 function makeSelect(label,options,val,onChange){const w=S('div');if(label)w.appendChild(S('label',{className:'form-label'},label));const s=S('select',{className:'sel',onChange});s.appendChild(S('option',{value:''},'— Sélectionner —'));options.forEach(o=>{const opt=S('option',{value:o},o);if(o===val)opt.selected=true;s.appendChild(opt)});w.appendChild(s);return w}
 let _noRender=false;
-function makeInput(label,type,val,onChange,opts={}){const w=S('div');if(label)w.appendChild(S('label',{className:'form-label'},label));if(opts.textarea){w.appendChild(S('textarea',{className:'input',value:val||'',onInput:onChange}))}else if(type==='date'||type==='month'){const inp=S('input',{className:'input',type:type,value:val==null?'':val});inp.addEventListener('change',()=>{_noRender=true;onChange({target:{value:inp.value}});_noRender=false});w.appendChild(inp)}else{const inp=S('input',{className:'input',type:type||'text',value:val==null?'':val,onInput:onChange});if(opts.step)inp.step=opts.step;w.appendChild(inp)}return w}
+function makeInput(label,type,val,onChange,opts={}){const w=S('div');if(label)w.appendChild(S('label',{className:'form-label'},label));if(opts.textarea){const ta=S('textarea',{className:'input',value:val||''});ta.addEventListener('input',()=>{_noRender=true;onChange({target:{value:ta.value}});_noRender=false});ta.addEventListener('change',()=>setState(s=>s));w.appendChild(ta)}else if(type==='date'||type==='month'){const inp=S('input',{className:'input',type:type,value:val==null?'':val});inp.addEventListener('change',()=>{_noRender=true;onChange({target:{value:inp.value}});_noRender=false});w.appendChild(inp)}else{const inp=S('input',{className:'input',type:type||'text',value:val==null?'':val});inp.addEventListener('input',()=>{_noRender=true;onChange({target:{value:inp.value}});_noRender=false});inp.addEventListener('change',()=>setState(s=>s));if(opts.step)inp.step=opts.step;w.appendChild(inp)}return w}
 function makeVesselSel(val,onChange){const w=S('div');w.appendChild(S('label',{className:'form-label'},'Navire'));const s=S('select',{className:'sel',onChange});allowedVessels().forEach(v=>{const o=S('option',{value:v.id},v.nom);if(v.id==val)o.selected=true;s.appendChild(o)});w.appendChild(s);return w}
 function makeCrewSel(nId,val,onChange){const w=S('div');w.appendChild(S('label',{className:'form-label'},'Assigné à'));const s=S('select',{className:'sel',onChange});s.appendChild(S('option',{value:''},'— Non assigné —'));state.equipage.filter(e=>e.nId===nId||!e.nId).forEach(e=>{const o=S('option',{value:e.id},e.nom+' ('+e.role+')');if(e.id==val)o.selected=true;s.appendChild(o)});w.appendChild(s);return w}
 function openModal(n,d){setState({modal:n,edit:d})}
@@ -1069,7 +1069,7 @@ function pgMaint(){
     }
     const acts=S('div',{className:'maint-card-actions'});
     acts.appendChild(S('button',{className:'icon-btn',onClick:()=>openModal('editMaint',{...m})},icon('edit',14)));
-    acts.appendChild(S('button',{className:'icon-btn danger',onClick:()=>{if(confirm('Supprimer cette intervention ?'))setState(s=>({maint:s.maint.filter(x=>x.id!==m.id)}))}},icon('trash',14)));
+    acts.appendChild(S('button',{className:'icon-btn danger',onClick:()=>{if(confirm('Supprimer cette intervention ?'))setState(s=>({maint:s.maint.filter(x=>x.id!==m.id),couts:s.couts.filter(c=>c.maintId!==m.id)}))}},icon('trash',14)));
     right.appendChild(acts);
     header.appendChild(right);
     card.appendChild(header);
@@ -1081,7 +1081,8 @@ function pgMaint(){
     detLine.appendChild(S('span',{},m.prio));
     if(m.echeance){detLine.appendChild(S('span',{style:{color:'#cbd5e1'}},'·'));detLine.appendChild(S('span',{style:isOverdue?{color:'#ef4444',fontWeight:600}:{}},'Échéance: '+fD(m.echeance)));}
     if(m.dateRealisation){detLine.appendChild(S('span',{style:{color:'#cbd5e1'}},'·'));detLine.appendChild(S('span',{style:{color:'#059669'}},'Réalisé: '+fD(m.dateRealisation)));}
-    if(m.cout){detLine.appendChild(S('span',{style:{color:'#cbd5e1'}},'·'));detLine.appendChild(S('span',{style:{fontWeight:500}},fmt(m.cout)));}
+    if(m.coutReel){detLine.appendChild(S('span',{style:{color:'#cbd5e1'}},'·'));detLine.appendChild(S('span',{style:{fontWeight:500,color:'#16a34a'}},fmt(m.coutReel)+' réel'));}
+    else if(m.cout){detLine.appendChild(S('span',{style:{color:'#cbd5e1'}},'·'));detLine.appendChild(S('span',{style:{fontWeight:500,color:'#94a3b8'}},fmt(m.cout)+' estimé'));}
     detail.appendChild(detLine);
     // Checklist progress
     if(m.checklist&&m.checklist.length){
@@ -1128,7 +1129,10 @@ function pgMaint(){
       // Crew assignment
       f.appendChild(makeCrewSel(+ed.nId,ed.assigneA,e=>setState(s=>({edit:{...s.edit,assigneA:e.target.value?+e.target.value:''}}))));
       f.appendChild(makeSelect('Justificatif',JUSTIFS,ed.justif,e=>setState(s=>({edit:{...s.edit,justif:e.target.value}}))));
-      f.appendChild(makeInput('Coût (€)','number',ed.cout,e=>setState(s=>({edit:{...s.edit,cout:+e.target.value}}))));
+      f.appendChild(makeInput('Coût estimé (€)','number',ed.cout,e=>setState(s=>({edit:{...s.edit,cout:+e.target.value}}))));
+      f.appendChild(makeInput('Coût réel (€)','number',ed.coutReel,e=>setState(s=>({edit:{...s.edit,coutReel:+e.target.value}}))));
+      f.appendChild(makeInput('Date de paiement','date',ed.datePaiement||'',e=>setState(s=>({edit:{...s.edit,datePaiement:e.target.value}}))));
+      f.appendChild(makeSelect('Statut paiement',['En attente','Payé','Annulé'],ed.statutPaiement||'En attente',e=>setState(s=>({edit:{...s.edit,statutPaiement:e.target.value}}))));
       f.appendChild(makeSelect('Récurrence',['aucune','mensuelle','trimestrielle','semestrielle','annuelle','2ans','3ans','5ans'],ed.recurrence||'aucune',e=>setState(s=>({edit:{...s.edit,recurrence:e.target.value}}))));
       const descW=makeInput('Description',null,ed.desc,e=>setState(s=>({edit:{...s.edit,desc:e.target.value}})),{textarea:true});descW.className='form-full';f.appendChild(descW);
       // Checklist section
@@ -1165,10 +1169,18 @@ function pgMaint(){
       factList.forEach((fi,i)=>{
         const row=S('div',{style:{display:'flex',gap:'4px',marginBottom:'6px',padding:'6px',background:'#fff',borderRadius:'4px',flexWrap:'wrap'}});
         const col1=S('div',{style:{flex:1,minWidth:'200px',display:'flex',flexDirection:'column',gap:'4px'}});
-        col1.appendChild(S('input',{type:'text',className:'input',style:{fontSize:'11px'},placeholder:'Nom du devis',value:fi.nom||'',onInput:e=>setState(s=>({edit:{...s.edit,factures:[...s.edit.factures.slice(0,i),{...fi,nom:e.target.value},...s.edit.factures.slice(i+1)]}})) }));
+        const nomInp=S('input',{type:'text',className:'input',style:{fontSize:'11px'},placeholder:'Nom du devis',value:fi.nom||''});
+        nomInp.addEventListener('input',e=>{_noRender=true;setState(s=>({edit:{...s.edit,factures:[...s.edit.factures.slice(0,i),{...s.edit.factures[i],nom:e.target.value},...s.edit.factures.slice(i+1)]}}));_noRender=false});
+        nomInp.addEventListener('change',()=>setState(s=>s));
+        col1.appendChild(nomInp);
         const row2=S('div',{style:{display:'flex',gap:'4px'}});
-        row2.appendChild(S('input',{type:'number',className:'input',style:{flex:1,fontSize:'11px'},placeholder:'Montant €',value:fi.montant||0,onInput:e=>setState(s=>({edit:{...s.edit,factures:[...s.edit.factures.slice(0,i),{...fi,montant:+e.target.value},...s.edit.factures.slice(i+1)]}})) }));
-        row2.appendChild(S('input',{type:'date',className:'input',style:{flex:1,fontSize:'11px'},value:fi.date||'',onInput:e=>setState(s=>({edit:{...s.edit,factures:[...s.edit.factures.slice(0,i),{...fi,date:e.target.value},...s.edit.factures.slice(i+1)]}})) }));
+        const montInp=S('input',{type:'number',className:'input',style:{flex:1,fontSize:'11px'},placeholder:'Montant €',value:fi.montant||0});
+        montInp.addEventListener('input',e=>{_noRender=true;setState(s=>({edit:{...s.edit,factures:[...s.edit.factures.slice(0,i),{...s.edit.factures[i],montant:+e.target.value},...s.edit.factures.slice(i+1)]}}));_noRender=false});
+        montInp.addEventListener('change',()=>setState(s=>s));
+        row2.appendChild(montInp);
+        const dateInp=S('input',{type:'date',className:'input',style:{flex:1,fontSize:'11px'},value:fi.date||''});
+        dateInp.addEventListener('change',e=>{_noRender=true;setState(s=>({edit:{...s.edit,factures:[...s.edit.factures.slice(0,i),{...s.edit.factures[i],date:e.target.value},...s.edit.factures.slice(i+1)]}}));_noRender=false});
+        row2.appendChild(dateInp);
         col1.appendChild(row2);
         // File upload for devis
         const fileRow=S('div',{style:{display:'flex',gap:'4px',alignItems:'center'}});
@@ -1232,7 +1244,22 @@ function pgMaint(){
       }
       const btns=S('div',{className:'form-full',style:{display:'flex',justifyContent:'flex-end',gap:'8px',marginTop:'8px'}});
       btns.appendChild(S('button',{className:'btn btn-s',onClick:closeModal},'Annuler'));
-      btns.appendChild(S('button',{className:'btn btn-p',onClick:()=>{const e=state.edit;if(!e.titre)return;if(state.modal==='addMaint'){const newId=nId(state.maint);setState(s=>({maint:[...s.maint,{...e,id:newId,recurrence:e.recurrence||'aucune',checklist:e.checklist||[],factures:e.factures||[],parentId:null}],modal:null,edit:null}))}else{const isFinalized=e.workflow&&e.workflow.find(w=>w.step==='Validée');if(isFinalized&&e.recurrence&&e.recurrence!=='aucune'){const days=getRecurrenceDays(e.recurrence);if(days>0){const newId=nId(state.maint);const newEch=addDays(today(),days);setState(s=>({maint:s.maint.map(m=>m.id===e.id?{...e}:m).concat({id:newId,nId:e.nId,compId:e.compId,cat:e.cat,titre:e.titre,prio:e.prio,statut:'Planifiée',echeance:newEch,dateFin:null,freq:e.freq,cout:e.cout,coutReel:null,assigneA:e.assigneA,desc:e.desc,justif:'En attente',workflow:[],photos:[],recurrence:e.recurrence,parentId:e.id,checklist:[],factures:[]}),modal:null,edit:null}))}}else{setState(s=>({maint:s.maint.map(m=>m.id===e.id?{...e}:m),modal:null,edit:null}))}}}},icon('save',14),' Enregistrer'));
+      btns.appendChild(S('button',{className:'btn btn-p',onClick:()=>{const e=state.edit;if(!e.titre)return;
+        // Helper: sync maintenance cost entry
+        function syncMaintCost(s,maintId,mData){
+          const montant=mData.coutReel||mData.cout||0;
+          const existing=s.couts.find(c=>c.maintId===maintId);
+          if(montant>0){
+            if(existing){
+              return s.couts.map(c=>c.maintId===maintId?{...c,nId:mData.nId,desc:'🔧 '+mData.titre,montant:montant,date:mData.dateRealisation||mData.echeance||'',justif:mData.justif||'En attente',datePaiement:mData.datePaiement||c.datePaiement||'',statutPaiement:mData.statutPaiement||c.statutPaiement||'En attente'}:c);
+            }else{
+              return[...s.couts,{id:nId(s.couts),nId:mData.nId,cat:'Maintenance',desc:'🔧 '+mData.titre,montant:montant,date:mData.dateRealisation||mData.echeance||'',fournisseur:'',justif:mData.justif||'En attente',photos:[],maintId:maintId,datePaiement:mData.datePaiement||'',statutPaiement:mData.statutPaiement||'En attente'}];
+            }
+          }else{
+            return existing?s.couts.filter(c=>c.maintId!==maintId):s.couts;
+          }
+        }
+        if(state.modal==='addMaint'){const newId=nId(state.maint);setState(s=>{const newCouts=syncMaintCost(s,newId,e);return{maint:[...s.maint,{...e,id:newId,recurrence:e.recurrence||'aucune',checklist:e.checklist||[],factures:e.factures||[],parentId:null}],couts:newCouts,modal:null,edit:null}})}else{const isFinalized=e.workflow&&e.workflow.find(w=>w.step==='Validée');if(isFinalized&&e.recurrence&&e.recurrence!=='aucune'){const days=getRecurrenceDays(e.recurrence);if(days>0){const newId=nId(state.maint);const newEch=addDays(today(),days);setState(s=>{const newCouts=syncMaintCost(s,e.id,e);return{maint:s.maint.map(m=>m.id===e.id?{...e}:m).concat({id:newId,nId:e.nId,compId:e.compId,cat:e.cat,titre:e.titre,prio:e.prio,statut:'Planifiée',echeance:newEch,dateFin:null,freq:e.freq,cout:e.cout,coutReel:null,assigneA:e.assigneA,desc:e.desc,justif:'En attente',workflow:[],photos:[],recurrence:e.recurrence,parentId:e.id,checklist:[],factures:[],datePaiement:'',statutPaiement:'En attente'}),couts:newCouts,modal:null,edit:null}})}}else{setState(s=>{const newCouts=syncMaintCost(s,e.id,e);return{maint:s.maint.map(m=>m.id===e.id?{...e}:m),couts:newCouts,modal:null,edit:null}})}}}},icon('save',14),' Enregistrer'));
       f.appendChild(btns);return f;
     }));
   }
@@ -1246,7 +1273,7 @@ function pgCouts(){
     S('h2',{},'💰 Suivi des coûts'),
     S('div',{style:{display:'flex',gap:'8px',alignItems:'center'}},
       makeVesselFilter(),
-      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addCout',{nId:state.vessels[0]?.id||1,desc:'',cat:'Maintenance',montant:0,date:'',fournisseur:'',justif:'En attente',photos:[]})},icon('plus',14),' Ajouter')
+      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addCout',{nId:state.vessels[0]?.id||1,desc:'',cat:'Maintenance',montant:0,date:'',fournisseur:'',justif:'En attente',photos:[],datePaiement:'',statutPaiement:'En attente'})},icon('plus',14),' Ajouter')
     )
   ));
   const fc=filterByVessel(state.couts);
@@ -1296,19 +1323,22 @@ function pgCouts(){
   if(!displayed.length){sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucun coût.'));}
   const tbl=S('table',{});
   const thead=S('thead',{});
-  const hr=S('tr',{});['Navire','Description','Catégorie','Montant','Date','Fournisseur','Justif.','Pièces',''].forEach(h=>hr.appendChild(S('th',{},h)));
+  const hr=S('tr',{});['Navire','Description','Catégorie','Montant','Date','Fournisseur','Justif.','Paiement','Statut','Pièces',''].forEach(h=>hr.appendChild(S('th',{},h)));
   thead.appendChild(hr);tbl.appendChild(thead);
   const tbody=S('tbody',{});
   displayed.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).forEach(c=>{
     const tr=S('tr',{});
     tr.appendChild(S('td',{},vesselName(c.nId)));
-    tr.appendChild(S('td',{},c.desc));
+    tr.appendChild(S('td',{},c.desc+(c.maintId?' 🔧':'')));
     tr.appendChild(S('td',{},c.cat));
     tr.appendChild(S('td',{style:{fontWeight:600}},fmt(c.montant)));
     tr.appendChild(S('td',{},c.date||'-'));
     tr.appendChild(S('td',{},c.fournisseur||'-'));
     const jCls=c.justif==='Justifié'?'tag-ok':c.justif==='Manquant'?'tag-warn':'tag-pending';
     tr.appendChild(S('td',{},S('span',{className:'tag '+jCls},c.justif)));
+    tr.appendChild(S('td',{},c.datePaiement?fD(c.datePaiement):'—'));
+    const spCls=c.statutPaiement==='Payé'?'tag-ok':c.statutPaiement==='Annulé'?'tag-warn':'tag-pending';
+    tr.appendChild(S('td',{},S('span',{className:'tag '+spCls},c.statutPaiement||'En attente')));
     // Photos column
     const photosTd=S('td',{});
     const cPhotos=c.photos||[];
@@ -1337,6 +1367,8 @@ function pgCouts(){
       f.appendChild(makeInput('Date','date',ed.date,e=>setState(s=>({edit:{...s.edit,date:e.target.value}}))));
       f.appendChild(makeInput('Fournisseur',null,ed.fournisseur,e=>setState(s=>({edit:{...s.edit,fournisseur:e.target.value}}))));
       f.appendChild(makeSelect('Justificatif',JUSTIFS,ed.justif,e=>setState(s=>({edit:{...s.edit,justif:e.target.value}}))));
+      f.appendChild(makeInput('Date de paiement','date',ed.datePaiement||'',e=>setState(s=>({edit:{...s.edit,datePaiement:e.target.value}}))));
+      f.appendChild(makeSelect('Statut paiement',['En attente','Payé','Annulé'],ed.statutPaiement||'En attente',e=>setState(s=>({edit:{...s.edit,statutPaiement:e.target.value}}))));
       // Photo upload for justificatif
       const photoSec=S('div',{className:'form-full',style:{marginTop:'8px'}});
       photoSec.appendChild(S('label',{className:'form-label'},'📎 Justificatif / facture (photo ou PDF)'));
