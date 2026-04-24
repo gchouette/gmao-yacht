@@ -237,17 +237,19 @@ function cloudLoad(force){
     .catch(e=>{cloudStatus='error';updateCloudBadge();return false});
 }
 
-async function uploadPhotoToCloud(base64DataUrl){
+async function uploadPhotoToCloud(base64DataUrl,fileName){
   const url=getCloudUrl();
   if(!url)return base64DataUrl; // fallback: keep as base64
   const parts=base64DataUrl.split(',');
   const mimeMatch=parts[0].match(/data:(.*?);/);
   const mimeType=mimeMatch?mimeMatch[1]:'image/jpeg';
   const raw=parts[1];
+  const fName=fileName||('gmao_'+Date.now()+(mimeType.includes('pdf')?'.pdf':'.jpg'));
   try{
-    const resp=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'uploadPhoto',base64:raw,mimeType:mimeType,fileName:'gmao_'+Date.now()+'.jpg'})});
+    const resp=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'uploadPhoto',base64:raw,mimeType:mimeType,fileName:fName})});
     const d=await resp.json();
     if(d.ok&&d.url)return d.url;
+    if(d.ok&&d.driveUrl)return d.driveUrl;
     return base64DataUrl;
   }catch(e){return base64DataUrl}
 }
@@ -261,7 +263,7 @@ function loadPersistedState(){try{const raw=localStorage.getItem(LS_KEY);if(!raw
 // Migration: broker/commission → brokers[]
 if(state.charters)state.charters=state.charters.map(c=>{if(c.brokers)return c;const b=[];if(c.broker)b.push({nom:c.broker,commission:c.commission||0});const nc={...c,brokers:b};delete nc.broker;delete nc.commission;return nc});
 return true}catch(e){return false}}
-function setState(u){const changes=typeof u==='function'?u(state):u;Object.assign(state,changes);if(changes.page)sessionStorage.setItem('gmao-page',changes.page);persistState();if(!renderScheduled){renderScheduled=true;requestAnimationFrame(()=>{renderScheduled=false;render()})}}
+function setState(u){const changes=typeof u==='function'?u(state):u;Object.assign(state,changes);if(changes.page)sessionStorage.setItem('gmao-page',changes.page);if(_noRender)return;persistState();if(!renderScheduled){renderScheduled=true;requestAnimationFrame(()=>{renderScheduled=false;render()})}}
 
 // ─── Icons ───
 function icon(n,sz=16){const p={anchor:'<circle cx="12" cy="5" r="3"/><line x1="12" y1="22" x2="12" y2="8"/><path d="M5 12H2a10 10 0 0020 0h-3"/>',ship:'<path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1 .6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M19.38 20A11.6 11.6 0 0021 14l-9-4-9 4a11.6 11.6 0 002.81 7.76"/><path d="M19 13V7a2 2 0 00-2-2H7a2 2 0 00-2 2v6"/><line x1="12" y1="1" x2="12" y2="4"/>',wrench:'<path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/>',dollar:'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>',package:'<path d="M16.5 9.4L7.55 4.24"/><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>',book:'<path d="M4 19.5v-15A2.5 2.5 0 016.5 2H20v20H6.5a2.5 2.5 0 010-5H20"/>',file:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>',layout:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>',plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',edit:'<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>',trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>',alert:'<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',check:'<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',x:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',save:'<path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>',search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1.08-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.6 9a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 4.6a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.07V3a2 2 0 014 0v.09c.003.658.396 1.25 1 1.51a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 010 4h-.09c-.658.003-1.25.396-1.51 1z"/>',fuel:'<path d="M3 22V5a2 2 0 012-2h8a2 2 0 012 2v17"/><path d="M15 11h2a2 2 0 012 2v4a1 1 0 002 0V9l-3-3"/><path d="M7 9h4"/><line x1="1" y1="22" x2="21" y2="22"/>',users:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>',box:'<path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>',sail:'<path d="M22 2L12 22 2 12z"/>',shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',download:'<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',upload:'<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',calc:'<rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><line x1="8" y1="10" x2="8" y2="10.01"/><line x1="12" y1="10" x2="12" y2="10.01"/><line x1="16" y1="10" x2="16" y2="10.01"/><line x1="8" y1="14" x2="8" y2="14.01"/><line x1="12" y1="14" x2="12" y2="14.01"/><line x1="8" y1="18" x2="8" y2="18.01"/><line x1="12" y1="18" x2="12" y2="18.01"/>',chevDown:'<polyline points="6 9 12 15 18 9"/>',chevRight:'<polyline points="9 18 15 12 9 6"/>'};const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('width',sz);svg.setAttribute('height',sz);svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','2');svg.setAttribute('stroke-linecap','round');svg.setAttribute('stroke-linejoin','round');svg.style.display='inline-block';svg.style.verticalAlign='middle';svg.style.flexShrink='0';svg.style.pointerEvents='none';svg.innerHTML=p[n]||'';return svg}
@@ -360,9 +362,16 @@ function photoUpload(photos,onAdd,onRemove){
   const grid=S('div',{className:'photo-grid'});
   (photos||[]).forEach((src,i)=>{
     const wrap=S('div',{className:'photo-wrap'});
-    const img=S('img',{className:'photo-thumb',src:src});
-    img.addEventListener('click',()=>showLightbox(src));
-    wrap.appendChild(img);
+    const isPdf=typeof src==='string'&&(src.includes('.pdf')||src.startsWith('data:application/pdf'));
+    if(isPdf){
+      const pdfThumb=S('a',{href:src,target:'_blank',className:'photo-thumb',style:{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',background:'#fef2f2',textDecoration:'none',borderRadius:'6px',fontSize:'10px',color:'#ef4444',fontWeight:600}});
+      pdfThumb.appendChild(icon('file',20));pdfThumb.appendChild(S('span',{style:{marginTop:'2px'}},'PDF'));
+      wrap.appendChild(pdfThumb);
+    }else{
+      const img=S('img',{className:'photo-thumb',src:src});
+      img.addEventListener('click',()=>showLightbox(src));
+      wrap.appendChild(img);
+    }
     const rm=S('button',{className:'photo-remove',onClick:e=>{e.stopPropagation();onRemove(i);}});
     rm.textContent='×';
     wrap.appendChild(rm);
@@ -371,20 +380,25 @@ function photoUpload(photos,onAdd,onRemove){
   // Upload button
   const zone=S('div',{className:'photo-upload-zone'});
   zone.appendChild(icon('plus',18));
-  zone.appendChild(S('span',{},'Photo'));
-  const inp=S('input',{type:'file',accept:'image/*',multiple:'true',style:{display:'none'}});
+  zone.appendChild(S('span',{},'Fichier'));
+  const inp=S('input',{type:'file',accept:'image/*,.pdf',multiple:'true',style:{display:'none'}});
   inp.addEventListener('change',e=>{
     Array.from(e.target.files).forEach(f=>{
-      if(f.size>10*1024*1024)return;
+      if(f.size>10*1024*1024){alert('Fichier trop volumineux (max 10 Mo)');return}
       const reader=new FileReader();
       reader.onload=ev=>{
-        compressImage(ev.target.result,1200,900,0.6).then(compressed=>{
+        const isPdf=f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf');
+        if(isPdf){
           if(getCloudUrl()){
-            uploadPhotoToCloud(compressed).then(url=>onAdd(url));
-          }else{
-            onAdd(compressed);
-          }
-        });
+            uploadPhotoToCloud(ev.target.result,f.name).then(url=>onAdd(url));
+          }else{onAdd(ev.target.result)}
+        }else{
+          compressImage(ev.target.result,1200,900,0.6).then(compressed=>{
+            if(getCloudUrl()){
+              uploadPhotoToCloud(compressed,f.name).then(url=>onAdd(url));
+            }else{onAdd(compressed)}
+          });
+        }
       };
       reader.readAsDataURL(f);
     });
@@ -416,7 +430,8 @@ function photoGallery(photos){
 
 // ─── UI Builders ───
 function makeSelect(label,options,val,onChange){const w=S('div');if(label)w.appendChild(S('label',{className:'form-label'},label));const s=S('select',{className:'sel',onChange});s.appendChild(S('option',{value:''},'— Sélectionner —'));options.forEach(o=>{const opt=S('option',{value:o},o);if(o===val)opt.selected=true;s.appendChild(opt)});w.appendChild(s);return w}
-function makeInput(label,type,val,onChange,opts={}){const w=S('div');if(label)w.appendChild(S('label',{className:'form-label'},label));if(opts.textarea){w.appendChild(S('textarea',{className:'input',value:val||'',onInput:onChange}))}else{const inp=S('input',{className:'input',type:type||'text',value:val==null?'':val,onInput:onChange});if(opts.step)inp.step=opts.step;w.appendChild(inp)}return w}
+let _noRender=false;
+function makeInput(label,type,val,onChange,opts={}){const w=S('div');if(label)w.appendChild(S('label',{className:'form-label'},label));if(opts.textarea){w.appendChild(S('textarea',{className:'input',value:val||'',onInput:onChange}))}else if(type==='date'||type==='month'){const inp=S('input',{className:'input',type:type,value:val==null?'':val});inp.addEventListener('change',()=>{_noRender=true;onChange({target:{value:inp.value}});_noRender=false});w.appendChild(inp)}else{const inp=S('input',{className:'input',type:type||'text',value:val==null?'':val,onInput:onChange});if(opts.step)inp.step=opts.step;w.appendChild(inp)}return w}
 function makeVesselSel(val,onChange){const w=S('div');w.appendChild(S('label',{className:'form-label'},'Navire'));const s=S('select',{className:'sel',onChange});allowedVessels().forEach(v=>{const o=S('option',{value:v.id},v.nom);if(v.id==val)o.selected=true;s.appendChild(o)});w.appendChild(s);return w}
 function makeCrewSel(nId,val,onChange){const w=S('div');w.appendChild(S('label',{className:'form-label'},'Assigné à'));const s=S('select',{className:'sel',onChange});s.appendChild(S('option',{value:''},'— Non assigné —'));state.equipage.filter(e=>e.nId===nId||!e.nId).forEach(e=>{const o=S('option',{value:e.id},e.nom+' ('+e.role+')');if(e.id==val)o.selected=true;s.appendChild(o)});w.appendChild(s);return w}
 function openModal(n,d){setState({modal:n,edit:d})}
@@ -709,12 +724,13 @@ function pgFlotte(){
     body.appendChild(S('div',{style:{marginTop:'10px',paddingTop:'10px',borderTop:'1px solid #f1f5f9'}},
       S('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'6px'}},
         S('span',{style:{fontSize:'12px',fontWeight:600,color:'#475569'}},'Équipage ('+crew.length+')'),
-        S('button',{className:'btn btn-s btn-sm',onClick:()=>openModal('addCrew',{nId:v.id,nom:'',role:'',tel:'',email:'',actif:true,numMarin:'',numPasseport:'',permanent:true,dateDebut:'',dateFin:''})},icon('plus',12),' Ajouter')
+        S('button',{className:'btn btn-s btn-sm',onClick:()=>openModal('addCrew',{nId:v.id,nom:'',role:'',tel:'',email:'',actif:true,numMarin:'',numPasseport:'',permanent:true,dateDebut:'',dateFin:'',photo:''})},icon('plus',12),' Ajouter')
       )
     ));
     crew.forEach(c=>{
-      body.appendChild(S('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'4px 0',fontSize:'12px'}},
-        S('div',null,S('span',{style:{fontWeight:500}},c.nom),' ',S('span',{style:{color:'#64748b'}},'('+c.role+')'),(c.permanent===false&&c.dateFin)?' — '+c.dateFin:c.permanent!==false?' (permanent)':''),
+      const avatar=c.photo?S('img',{src:c.photo,style:{width:'28px',height:'28px',borderRadius:'50%',objectFit:'cover',flexShrink:'0'}}):S('div',{style:{width:'28px',height:'28px',borderRadius:'50%',background:'#e2e8f0',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',fontWeight:600,color:'#64748b',flexShrink:'0'}},c.nom?c.nom.charAt(0).toUpperCase():'?');
+      body.appendChild(S('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'4px 0',fontSize:'12px',gap:'8px'}},
+        S('div',{style:{display:'flex',alignItems:'center',gap:'8px'}},avatar,S('span',{style:{fontWeight:500}},c.nom),' ',S('span',{style:{color:'#64748b'}},'('+c.role+')'),(c.permanent===false&&c.dateFin)?' — '+c.dateFin:c.permanent!==false?' (permanent)':''),
         S('div',{style:{display:'flex',gap:'2px'}},
           S('button',{className:'icon-btn',style:{color:'#2563eb'},onClick:()=>openModal('editCrew',{...c})},icon('edit',14)),
           S('button',{className:'icon-btn danger',style:{color:'#dc2626'},onClick:()=>{if(confirm('Supprimer cet équipier ?'))setState(s=>({equipage:s.equipage.filter(x=>x.id!==c.id)}))}},icon('trash',14))
@@ -764,6 +780,21 @@ function pgFlotte(){
   }
   if(state.modal==='addCrew'||state.modal==='editCrew'){
     sec.appendChild(renderModal(state.modal==='addCrew'?'Ajouter un membre':'Modifier',false,()=>{const ed=state.edit;const f=S('div',{className:'form-row'});
+      // Photo de profil
+      const photoDiv=S('div',{className:'form-full',style:{display:'flex',alignItems:'center',gap:'12px',marginBottom:'8px'}});
+      if(ed.photo){
+        photoDiv.appendChild(S('img',{src:ed.photo,style:{width:'56px',height:'56px',borderRadius:'50%',objectFit:'cover'}}));
+        photoDiv.appendChild(S('button',{className:'btn btn-d btn-sm',onClick:()=>setState(s=>({edit:{...s.edit,photo:''}}))},icon('trash',12),' Supprimer'));
+      }else{
+        const avatarZone=S('div',{style:{width:'56px',height:'56px',borderRadius:'50%',border:'2px dashed #cbd5e1',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',background:'#fafbfc'}});
+        avatarZone.appendChild(icon('plus',18));
+        const avatarInp=S('input',{type:'file',accept:'image/*',style:{display:'none'}});
+        avatarInp.addEventListener('change',async ev=>{const file=ev.target.files[0];if(!file||file.size>5*1024*1024)return;const r=new FileReader();r.onload=async re=>{const compressed=await compressImage(re.target.result,400,400,0.7);const url=getCloudUrl()?await uploadPhotoToCloud(compressed,file.name):compressed;setState(s=>({edit:{...s.edit,photo:url}}))};r.readAsDataURL(file)});
+        avatarZone.addEventListener('click',()=>avatarInp.click());avatarZone.appendChild(avatarInp);
+        photoDiv.appendChild(avatarZone);
+        photoDiv.appendChild(S('span',{style:{fontSize:'12px',color:'#94a3b8'}},'Ajouter une photo'));
+      }
+      f.appendChild(photoDiv);
       f.appendChild(makeInput('Nom',null,ed.nom,e=>setState(s=>({edit:{...s.edit,nom:e.target.value}}))));
       f.appendChild(makeSelect('Rôle',['Capitaine','Second','Mécanicien','Matelot','Hôtesse','Chef','Steward'],ed.role,e=>setState(s=>({edit:{...s.edit,role:e.target.value}}))));
       f.appendChild(makeInput('Téléphone',null,ed.tel,e=>setState(s=>({edit:{...s.edit,tel:e.target.value}}))));
@@ -840,7 +871,7 @@ function pgComposants(){
       f.appendChild(makeInput('N° série',null,ed.serie,e=>setState(s=>({edit:{...s.edit,serie:e.target.value}}))));
       f.appendChild(makeInput('Date install.','date',ed.install,e=>setState(s=>({edit:{...s.edit,install:e.target.value}}))));
       const mw=makeInput('Manuel / Notes techniques',null,ed.manuel,e=>setState(s=>({edit:{...s.edit,manuel:e.target.value}})),{textarea:true});mw.className='form-full';f.appendChild(mw);
-      const pw=S('div',{className:'form-full'});pw.appendChild(S('label',{className:'form-label'},'Photos'));pw.appendChild(photoUpload(ed.photos||[],src=>setState(s=>({edit:{...s.edit,photos:[...(s.edit.photos||[]),src]}})),i=>setState(s=>{const p=[...(s.edit.photos||[])];p.splice(i,1);return{edit:{...s.edit,photos:p}}})));f.appendChild(pw);
+      const pw=S('div',{className:'form-full'});pw.appendChild(S('label',{className:'form-label'},'📎 Photos / PDF'));pw.appendChild(photoUpload(ed.photos||[],src=>setState(s=>({edit:{...s.edit,photos:[...(s.edit.photos||[]),src]}})),i=>setState(s=>{const p=[...(s.edit.photos||[])];p.splice(i,1);return{edit:{...s.edit,photos:p}}})));f.appendChild(pw);
       const btns=S('div',{className:'form-full',style:{display:'flex',justifyContent:'flex-end',gap:'8px',marginTop:'8px'}});
       btns.appendChild(S('button',{className:'btn btn-s',onClick:closeModal},'Annuler'));
       btns.appendChild(S('button',{className:'btn btn-p',onClick:()=>{const e=state.edit;if(!e.nom)return;if(state.modal==='addComp')setState(s=>({composants:[...s.composants,{...e,id:nId(s.composants),nId:+e.nId}],modal:null,edit:null}));else setState(s=>({composants:s.composants.map(c=>c.id===e.id?{...e,nId:+e.nId}:c),modal:null,edit:null}))}},icon('save',14),' Enregistrer'));
@@ -1126,17 +1157,14 @@ function pgMaint(){
         } else {
           const fileInp=S('input',{type:'file',accept:'image/*,.pdf,.doc,.docx,.xls,.xlsx',style:{fontSize:'11px',flex:1}});
           fileInp.addEventListener('change',ev=>{
-            const file=ev.target.files[0];if(!file)return;
+            const file=ev.target.files[0];if(!file||file.size>10*1024*1024){if(file)alert('Fichier trop volumineux (max 10 Mo)');return}
             const reader=new FileReader();
-            reader.onload=re=>{
+            reader.onload=async re=>{
               const isImg=file.type.startsWith('image/');
-              if(isImg){
-                compressImage(re.target.result,1200,900,0.7).then(compressed=>{
-                  setState(s=>({edit:{...s.edit,factures:[...s.edit.factures.slice(0,i),{...fi,fichier:compressed,fichierNom:file.name},...s.edit.factures.slice(i+1)]}}));
-                });
-              } else {
-                setState(s=>({edit:{...s.edit,factures:[...s.edit.factures.slice(0,i),{...fi,fichier:re.target.result,fichierNom:file.name},...s.edit.factures.slice(i+1)]}}));
-              }
+              let fileData=re.target.result;
+              if(isImg)fileData=await compressImage(fileData,1200,900,0.7);
+              if(getCloudUrl())fileData=await uploadPhotoToCloud(fileData,file.name);
+              setState(s=>({edit:{...s.edit,factures:[...s.edit.factures.slice(0,i),{...fi,fichier:fileData,fichierNom:file.name},...s.edit.factures.slice(i+1)]}}));
             };
             reader.readAsDataURL(file);
           });
@@ -1152,7 +1180,7 @@ function pgMaint(){
       f.appendChild(factSec);
       // Photos
       const photoSec=S('div',{className:'form-full'});
-      photoSec.appendChild(S('label',{className:'form-label'},'Photos'));
+      photoSec.appendChild(S('label',{className:'form-label'},'📎 Photos / PDF'));
       photoSec.appendChild(photoUpload(ed.photos||[],
         src=>setState(s=>({edit:{...s.edit,photos:[...(s.edit.photos||[]),src]}})),
         idx=>setState(s=>({edit:{...s.edit,photos:(s.edit.photos||[]).filter((_,i)=>i!==idx)}}))
@@ -1288,7 +1316,7 @@ function pgCouts(){
       f.appendChild(makeSelect('Justificatif',JUSTIFS,ed.justif,e=>setState(s=>({edit:{...s.edit,justif:e.target.value}}))));
       // Photo upload for justificatif
       const photoSec=S('div',{className:'form-full',style:{marginTop:'8px'}});
-      photoSec.appendChild(S('label',{className:'form-label'},'📷 Photos justificatif / facture'));
+      photoSec.appendChild(S('label',{className:'form-label'},'📎 Justificatif / facture (photo ou PDF)'));
       photoSec.appendChild(photoUpload(ed.photos||[],
         src=>setState(s=>({edit:{...s.edit,photos:[...(s.edit.photos||[]),src]}})),
         idx=>setState(s=>{const p=[...(s.edit.photos||[])];p.splice(idx,1);return{edit:{...s.edit,photos:p}}})
@@ -1509,13 +1537,19 @@ function pgCompta(){
   const filterBar=S('div',{style:{display:'flex',gap:'8px',alignItems:'center',marginBottom:'12px',flexWrap:'wrap'}});
   // Mode toggle
   const modeToggle=S('div',{style:{display:'flex',borderRadius:'6px',overflow:'hidden',border:'1px solid #cbd5e1'}});
-  ['mois','periode'].forEach(m=>{
+  ['mois','annee','periode'].forEach(m=>{
     const active=state.comptaMode===m;
-    modeToggle.appendChild(S('button',{style:{padding:'4px 12px',fontSize:'12px',fontWeight:active?600:400,background:active?'#2563eb':'#fff',color:active?'#fff':'#334155',border:'none',cursor:'pointer'},onClick:()=>setState({comptaMode:m})},m==='mois'?'Mois':'Période'));
+    const label=m==='mois'?'Mois':m==='annee'?'Année':'Période';
+    modeToggle.appendChild(S('button',{style:{padding:'4px 12px',fontSize:'12px',fontWeight:active?600:400,background:active?'#2563eb':'#fff',color:active?'#fff':'#334155',border:'none',cursor:'pointer'},onClick:()=>setState({comptaMode:m})},label));
   });
   filterBar.appendChild(modeToggle);
   if(state.comptaMode==='mois'){
     filterBar.appendChild(S('input',{type:'month',value:state.comptaMois||curMonth,style:{padding:'4px 8px',border:'1px solid #cbd5e1',borderRadius:'6px',fontSize:'13px'},onchange:e=>setState({comptaMois:e.target.value})}));
+  }else if(state.comptaMode==='annee'){
+    if(!state.comptaAnnee)state.comptaAnnee=String(now.getFullYear());
+    const ySel=S('select',{value:state.comptaAnnee,style:{padding:'4px 8px',border:'1px solid #cbd5e1',borderRadius:'6px',fontSize:'13px'},onchange:e=>setState({comptaAnnee:e.target.value})});
+    const curY=now.getFullYear();for(let y=curY-5;y<=curY+2;y++)ySel.appendChild(S('option',{value:String(y),selected:String(y)===state.comptaAnnee},String(y)));
+    filterBar.appendChild(ySel);
   }else{
     if(!state.comptaDebut)state.comptaDebut=curMonth+'-01';
     if(!state.comptaFin)state.comptaFin=now.toISOString().slice(0,10);
@@ -1531,6 +1565,10 @@ function pgCompta(){
     const mois=state.comptaMois||curMonth;
     mCouts=filterByVessel(state.couts).filter(c=>c.date&&c.date.startsWith(mois));
     mRevs=filterByVessel(state.revenus).filter(r=>r.date&&r.date.startsWith(mois));
+  }else if(state.comptaMode==='annee'){
+    const yr=state.comptaAnnee||String(now.getFullYear());
+    mCouts=filterByVessel(state.couts).filter(c=>c.date&&c.date.startsWith(yr));
+    mRevs=filterByVessel(state.revenus).filter(r=>r.date&&r.date.startsWith(yr));
   }else{
     const d0=state.comptaDebut||'';const d1=state.comptaFin||'9999';
     mCouts=filterByVessel(state.couts).filter(c=>c.date&&c.date>=d0&&c.date<=d1);
@@ -1548,7 +1586,7 @@ function pgCompta(){
   stats.appendChild(statCard('Justifiés',jOk+'/'+mCouts.length,'shield',jOk===mCouts.length?'#22c55e':'#f59e0b'));
   sec.appendChild(stats);
   // Revenue table
-  const periodLabel=state.comptaMode==='mois'?'du mois':'de la période';
+  const periodLabel=state.comptaMode==='mois'?'du mois':state.comptaMode==='annee'?'de l\'année':'de la période';
   sec.appendChild(S('h3',{style:{fontSize:'14px',fontWeight:600,margin:'12px 0 8px'}},'Revenus '+periodLabel));
   if(mRevs.length){
     const tbl=S('table',{});const thead=S('thead',{});const hr=S('tr',{});
@@ -1692,7 +1730,7 @@ function pgInventaire(){
     S('h2',{},'📦 Inventaire pièces'),
     S('div',{style:{display:'flex',gap:'8px'}},
       makeVesselFilter(),
-      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addInv',{nId:state.vessels[0]?.id||1,nom:'',ref:'',cat:'Mécanique',qte:0,seuil:1,emplacement:'',fournisseur:''})},icon('plus',14),' Ajouter')
+      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addInv',{nId:state.vessels[0]?.id||1,nom:'',ref:'',cat:'Mécanique',qte:0,seuil:1,emplacement:'',fournisseur:'',photos:[]})},icon('plus',14),' Ajouter')
     )
   ));
   const fi=filterByVessel(state.inventaire);
@@ -1741,6 +1779,10 @@ function pgInventaire(){
       f.appendChild(makeInput('Seuil alerte','number',ed.seuil,e=>setState(s=>({edit:{...s.edit,seuil:+e.target.value}}))));
       f.appendChild(makeInput('Emplacement',null,ed.emplacement,e=>setState(s=>({edit:{...s.edit,emplacement:e.target.value}}))));
       f.appendChild(makeInput('Fournisseur',null,ed.fournisseur,e=>setState(s=>({edit:{...s.edit,fournisseur:e.target.value}}))));
+      const photoSec=S('div',{className:'form-full'});
+      photoSec.appendChild(S('label',{className:'form-label'},'📎 Photos / documents (image ou PDF)'));
+      photoSec.appendChild(photoUpload(ed.photos||[],src=>setState(s=>({edit:{...s.edit,photos:[...(s.edit.photos||[]),src]}})),i=>setState(s=>({edit:{...s.edit,photos:(s.edit.photos||[]).filter((_,idx)=>idx!==i)}}))));
+      f.appendChild(photoSec);
       const btns=S('div',{className:'form-full',style:{display:'flex',justifyContent:'flex-end',gap:'8px',marginTop:'8px'}});
       btns.appendChild(S('button',{className:'btn btn-s',onClick:closeModal},'Annuler'));
       btns.appendChild(S('button',{className:'btn btn-p',onClick:()=>{const e=state.edit;if(!e.nom)return;if(state.modal==='addInv')setState(s=>({inventaire:[...s.inventaire,{...e,id:nId(s.inventaire)}],modal:null,edit:null}));else setState(s=>({inventaire:s.inventaire.map(p=>p.id===e.id?{...e}:p),modal:null,edit:null}))}},icon('save',14),' Enregistrer'));
@@ -1810,7 +1852,7 @@ function pgJournal(){
       const tw=makeInput('Texte',null,ed.texte,e=>setState(s=>({edit:{...s.edit,text:e.target.value}})),{textarea:true});tw.className='form-full';f.appendChild(tw);
       // Photos
       const photoSec=S('div',{className:'form-full'});
-      photoSec.appendChild(S('label',{className:'form-label'},'Photos'));
+      photoSec.appendChild(S('label',{className:'form-label'},'📎 Photos / PDF'));
       photoSec.appendChild(photoUpload(ed.photos||[],
         src=>setState(s=>({edit:{...s.edit,photos:[...(s.edit.photos||[]),src]}})),
         idx=>setState(s=>({edit:{...s.edit,photos:(s.edit.photos||[]).filter((_,i)=>i!==idx)}}))
@@ -1857,7 +1899,7 @@ function pgDocuments(){
     tr.appendChild(S('td',{style:isExp?{color:'#ef4444',fontWeight:600}:{}},d.echeance||'-'));
     const sCls=d.statut==='Valide'?'tag-ok':d.statut==='Archivé'?'':'tag-warn';
     tr.appendChild(S('td',{},S('span',{className:'tag '+sCls},d.statut)));
-    tr.appendChild(S('td',{},d.fichier?S('a',{href:d.fichier,download:d.fichierNom||'document',style:{color:'#2563eb',fontSize:'11px'}},d.fichierNom||'Télécharger'):'—'));
+    tr.appendChild(S('td',{},d.fichier?S('a',{href:d.fichier,target:'_blank',style:{color:'#2563eb',fontSize:'11px'}},icon('file',12),' '+(d.fichierNom||'Ouvrir')):'—'));
     tr.appendChild(S('td',{style:{fontSize:'11px'}},d.notes||'-'));
     const acts=S('td',{});
     acts.appendChild(S('button',{className:'icon-btn',onClick:()=>openModal('editDoc',{...d})},icon('edit',14)));
@@ -1882,7 +1924,12 @@ function pgDocuments(){
         const fZone=S('div',{className:'photo-upload-zone',style:{width:'100%',height:'48px',flexDirection:'row',gap:'6px'}});
         fZone.appendChild(icon('upload',14));fZone.appendChild(S('span',{style:{fontSize:'11px'}},'Cliquer pour ajouter un fichier'));
         const fInp=S('input',{type:'file',style:{display:'none'}});
-        fInp.addEventListener('change',ev=>{const file=ev.target.files[0];if(!file||file.size>10*1024*1024)return;const r=new FileReader();r.onload=re=>setState(s=>({edit:{...s.edit,fichier:re.target.result,fichierNom:file.name}}));r.readAsDataURL(file);});
+        fInp.addEventListener('change',ev=>{const file=ev.target.files[0];if(!file||file.size>10*1024*1024){alert('Fichier trop volumineux (max 10 Mo)');return}
+          const r=new FileReader();r.onload=async re=>{
+            fZone.innerHTML='';fZone.appendChild(S('span',{style:{fontSize:'11px',color:'#64748b'}},'Upload en cours…'));
+            const driveUrl=await uploadPhotoToCloud(re.target.result,file.name);
+            setState(s=>({edit:{...s.edit,fichier:driveUrl,fichierNom:file.name}}));
+          };r.readAsDataURL(file);});
         fZone.addEventListener('click',()=>fInp.click());fZone.appendChild(fInp);
         fileSec.appendChild(fZone);
       }
