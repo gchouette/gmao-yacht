@@ -1504,16 +1504,38 @@ function pgCompta(){
   ));
   // Date range filter
   const now=new Date();const curMonth=now.toISOString().slice(0,7);
-  if(!state.comptaMois)setState({comptaMois:curMonth});
-  const moisBar=S('div',{style:{display:'flex',gap:'8px',alignItems:'center',marginBottom:'12px'}});
-  moisBar.appendChild(S('label',{style:{fontSize:'13px',fontWeight:500}},'Mois :'));
-  const mInput=S('input',{type:'month',value:state.comptaMois||curMonth,style:{padding:'4px 8px',border:'1px solid #cbd5e1',borderRadius:'6px',fontSize:'13px'},onchange:e=>setState({comptaMois:e.target.value})});
-  moisBar.appendChild(mInput);
-  sec.appendChild(moisBar);
-  const mois=state.comptaMois||curMonth;
-  // Filter data by month
-  const mCouts=filterByVessel(state.couts).filter(c=>c.date&&c.date.startsWith(mois));
-  const mRevs=filterByVessel(state.revenus).filter(r=>r.date&&r.date.startsWith(mois));
+  if(!state.comptaMois)state.comptaMois=curMonth;
+  if(!state.comptaMode)state.comptaMode='mois';
+  const filterBar=S('div',{style:{display:'flex',gap:'8px',alignItems:'center',marginBottom:'12px',flexWrap:'wrap'}});
+  // Mode toggle
+  const modeToggle=S('div',{style:{display:'flex',borderRadius:'6px',overflow:'hidden',border:'1px solid #cbd5e1'}});
+  ['mois','periode'].forEach(m=>{
+    const active=state.comptaMode===m;
+    modeToggle.appendChild(S('button',{style:{padding:'4px 12px',fontSize:'12px',fontWeight:active?600:400,background:active?'#2563eb':'#fff',color:active?'#fff':'#334155',border:'none',cursor:'pointer'},onClick:()=>setState({comptaMode:m})},m==='mois'?'Mois':'Période'));
+  });
+  filterBar.appendChild(modeToggle);
+  if(state.comptaMode==='mois'){
+    filterBar.appendChild(S('input',{type:'month',value:state.comptaMois||curMonth,style:{padding:'4px 8px',border:'1px solid #cbd5e1',borderRadius:'6px',fontSize:'13px'},onchange:e=>setState({comptaMois:e.target.value})}));
+  }else{
+    if(!state.comptaDebut)state.comptaDebut=curMonth+'-01';
+    if(!state.comptaFin)state.comptaFin=now.toISOString().slice(0,10);
+    filterBar.appendChild(S('label',{style:{fontSize:'12px',color:'#64748b'}},'Du'));
+    filterBar.appendChild(S('input',{type:'date',value:state.comptaDebut,style:{padding:'4px 8px',border:'1px solid #cbd5e1',borderRadius:'6px',fontSize:'13px'},onchange:e=>setState({comptaDebut:e.target.value})}));
+    filterBar.appendChild(S('label',{style:{fontSize:'12px',color:'#64748b'}},'au'));
+    filterBar.appendChild(S('input',{type:'date',value:state.comptaFin,style:{padding:'4px 8px',border:'1px solid #cbd5e1',borderRadius:'6px',fontSize:'13px'},onchange:e=>setState({comptaFin:e.target.value})}));
+  }
+  sec.appendChild(filterBar);
+  // Filter data by mode
+  let mCouts,mRevs;
+  if(state.comptaMode==='mois'){
+    const mois=state.comptaMois||curMonth;
+    mCouts=filterByVessel(state.couts).filter(c=>c.date&&c.date.startsWith(mois));
+    mRevs=filterByVessel(state.revenus).filter(r=>r.date&&r.date.startsWith(mois));
+  }else{
+    const d0=state.comptaDebut||'';const d1=state.comptaFin||'9999';
+    mCouts=filterByVessel(state.couts).filter(c=>c.date&&c.date>=d0&&c.date<=d1);
+    mRevs=filterByVessel(state.revenus).filter(r=>r.date&&r.date>=d0&&r.date<=d1);
+  }
   const totalDep=mCouts.reduce((s,c)=>s+c.montant,0);
   const totalRev=mRevs.reduce((s,r)=>s+r.montant,0);
   const result=totalRev-totalDep;
@@ -1526,7 +1548,8 @@ function pgCompta(){
   stats.appendChild(statCard('Justifiés',jOk+'/'+mCouts.length,'shield',jOk===mCouts.length?'#22c55e':'#f59e0b'));
   sec.appendChild(stats);
   // Revenue table
-  sec.appendChild(S('h3',{style:{fontSize:'14px',fontWeight:600,margin:'12px 0 8px'}},'Revenus du mois'));
+  const periodLabel=state.comptaMode==='mois'?'du mois':'de la période';
+  sec.appendChild(S('h3',{style:{fontSize:'14px',fontWeight:600,margin:'12px 0 8px'}},'Revenus '+periodLabel));
   if(mRevs.length){
     const tbl=S('table',{});const thead=S('thead',{});const hr=S('tr',{});
     ['Navire','Description','Type','Date','Paiement','Statut','Montant',''].forEach(h=>hr.appendChild(S('th',{style:h==='Montant'?{textAlign:'right'}:{}},h)));
@@ -1547,9 +1570,9 @@ function pgCompta(){
       tr.appendChild(acts);tbody.appendChild(tr);
     });
     tbl.appendChild(tbody);sec.appendChild(tbl);
-  }else sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucun revenu ce mois.'));
+  }else sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucun revenu sur cette période.'));
   // Expense table
-  sec.appendChild(S('h3',{style:{fontSize:'14px',fontWeight:600,margin:'12px 0 8px'}},'Dépenses du mois'));
+  sec.appendChild(S('h3',{style:{fontSize:'14px',fontWeight:600,margin:'12px 0 8px'}},'Dépenses '+periodLabel));
   if(mCouts.length){
     const tbl=S('table',{});const thead=S('thead',{});const hr=S('tr',{});
     ['Navire','Description','Catégorie','Justif.','Montant',''].forEach(h=>hr.appendChild(S('th',{style:h==='Montant'?{textAlign:'right'}:h===''?{width:'60px'}:{}},h)));
@@ -1565,7 +1588,7 @@ function pgCompta(){
       tr.appendChild(S('td',{style:{width:'60px'}}));tbody.appendChild(tr);
     });
     tbl.appendChild(tbody);sec.appendChild(tbl);
-  }else sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucune dépense ce mois.'));
+  }else sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucune dépense sur cette période.'));
   // Export
   const expBar=S('div',{style:{display:'flex',gap:'8px',marginTop:'12px'}});
   expBar.appendChild(S('button',{className:'btn btn-s btn-sm',onClick:()=>{
