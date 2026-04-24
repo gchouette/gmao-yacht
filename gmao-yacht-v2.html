@@ -538,10 +538,12 @@ apaDep:[
   {id:4,charterId:2,nId:2,desc:'Avitaillement traiteur',montant:3500,date:'2026-08-01',cat:'Nourriture',justif:'En attente'},
 ],
 revenus:[
-  {id:1,nId:2,type:'Charter',desc:'Charter Laurent — Juillet',montant:35000,date:'2026-07-05',chartId:1},
-  {id:2,nId:2,type:'Charter',desc:'Charter Techcorp — Août',montant:55000,date:'2026-08-01',chartId:2},
-  {id:3,nId:1,type:'Charter',desc:'Charter Dubois (option)',montant:12000,date:'2026-07-20',chartId:3},
-  {id:4,nId:1,type:'Autre',desc:'Location journée presse',montant:3000,date:'2026-03-15',chartId:null},
+  {id:1,nId:2,type:'Charter',desc:'Charter Laurent — Juillet',montant:35000,date:'2026-07-05',chartId:1,datePaiement:'',statutPaiement:'En attente'},
+  {id:2,nId:2,type:'Charter',desc:'Charter Techcorp — Août',montant:55000,date:'2026-08-01',chartId:2,datePaiement:'',statutPaiement:'En attente'},
+  {id:3,nId:2,type:'APA',desc:'APA — Charter Laurent',montant:8000,date:'2026-07-05',chartId:1,datePaiement:'',statutPaiement:'En attente'},
+  {id:4,nId:2,type:'APA',desc:'APA — Charter Techcorp',montant:12000,date:'2026-08-01',chartId:2,datePaiement:'',statutPaiement:'En attente'},
+  {id:5,nId:1,type:'Charter',desc:'Charter Dubois (option)',montant:12000,date:'2026-07-20',chartId:3,datePaiement:'',statutPaiement:'En attente'},
+  {id:6,nId:1,type:'Autre',desc:'Location journée presse',montant:3000,date:'2026-03-15',chartId:null,datePaiement:'2026-03-15',statutPaiement:'Encaissé'},
 ],
 reglementaire:[
   {id:1,nId:1,nom:'Certificat de navigation',cat:'Navigation',eauxFr:true,eauxEtr:true,echeance:'2027-01-15',statut:'Conforme',notes:'Affaires Maritimes'},
@@ -1420,7 +1422,7 @@ function pgCharter(){
       f.appendChild(makeSelect('Statut',['Confirmé','Option','Annulé','Terminé'],ed.statut,e=>setState(s=>({edit:{...s.edit,statut:e.target.value}}))));
       const btns=S('div',{className:'form-full',style:{display:'flex',justifyContent:'flex-end',gap:'8px',marginTop:'8px'}});
       btns.appendChild(S('button',{className:'btn btn-s',onClick:closeModal},'Annuler'));
-      btns.appendChild(S('button',{className:'btn btn-p',onClick:()=>{const e=state.edit;if(!e.client)return;if(state.modal==='addCharter')setState(s=>({charters:[...s.charters,{...e,id:nId(s.charters)}],modal:null,edit:null}));else setState(s=>({charters:s.charters.map(c=>c.id===e.id?{...e}:c),modal:null,edit:null}))}},icon('save',14),' Enregistrer'));
+      btns.appendChild(S('button',{className:'btn btn-p',onClick:()=>{const e=state.edit;if(!e.client)return;if(state.modal==='addCharter'){const chId=nId(state.charters);const newRevs=[];if(e.montant>0)newRevs.push({id:nId(state.revenus),nId:+e.nId,type:'Charter',desc:'Charter '+e.client,montant:+e.montant,date:e.debut||'',chartId:chId,datePaiement:'',statutPaiement:'En attente'});if(e.apa>0)newRevs.push({id:nId(state.revenus)+newRevs.length,nId:+e.nId,type:'APA',desc:'APA — Charter '+e.client,montant:+e.apa,date:e.debut||'',chartId:chId,datePaiement:'',statutPaiement:'En attente'});setState(s=>({charters:[...s.charters,{...e,id:chId}],revenus:[...s.revenus,...newRevs],modal:null,edit:null}))}else setState(s=>({charters:s.charters.map(c=>c.id===e.id?{...e}:c),modal:null,edit:null}))}},icon('save',14),' Enregistrer'));
       f.appendChild(btns);return f;
     }));
   }
@@ -1469,7 +1471,7 @@ function pgCompta(){
     S('h2',{},'📊 Comptabilité'),
     S('div',{style:{display:'flex',gap:'8px',alignItems:'center',flexWrap:'wrap'}},
       makeVesselFilter(),
-      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addRevenu',{nId:state.vessels[0]?.id||1,desc:'',type:'Charter',montant:0,date:''})},icon('plus',14),' Ajouter revenu'),
+      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addRevenu',{nId:state.vessels[0]?.id||1,desc:'',type:'Charter',montant:0,date:'',datePaiement:'',statutPaiement:'En attente'})},icon('plus',14),' Ajouter revenu'),
       S('button',{className:'btn btn-s btn-sm',onClick:()=>openModal('extractCompta',{month:state.comptaMois||new Date().toISOString().slice(0,7)})},icon('download',14),' Extraction mensuelle')
     )
   ));
@@ -1500,15 +1502,20 @@ function pgCompta(){
   sec.appendChild(S('h3',{style:{fontSize:'14px',fontWeight:600,margin:'12px 0 8px'}},'Revenus du mois'));
   if(mRevs.length){
     const tbl=S('table',{});const thead=S('thead',{});const hr=S('tr',{});
-    ['Navire','Description','Type','Montant','Date',''].forEach(h=>hr.appendChild(S('th',{},h)));
+    ['Navire','Description','Type','Montant','Date','Paiement','Statut',''].forEach(h=>hr.appendChild(S('th',{},h)));
     thead.appendChild(hr);tbl.appendChild(thead);
     const tbody=S('tbody',{});
     mRevs.forEach(r=>{
       const tr=S('tr',{});
       tr.appendChild(S('td',{},vesselName(r.nId)));tr.appendChild(S('td',{},r.desc));
-      tr.appendChild(S('td',{},r.type));tr.appendChild(S('td',{style:{fontWeight:600,color:'#22c55e'}},fmt(r.montant)));
+      tr.appendChild(S('td',{},S('span',{className:'tag '+(r.type==='Charter'?'b-cyan':r.type==='APA'?'tag-pending':'tag-ok')},r.type)));
+      tr.appendChild(S('td',{style:{fontWeight:600,color:'#22c55e'}},fmt(r.montant)));
       tr.appendChild(S('td',{},r.date));
-      const acts=S('td',{});
+      tr.appendChild(S('td',{},r.datePaiement?fD(r.datePaiement):'—'));
+      const spCls=r.statutPaiement==='Encaissé'?'tag-ok':r.statutPaiement==='Annulé'?'tag-warn':'tag-pending';
+      tr.appendChild(S('td',{},S('span',{className:'tag '+spCls},r.statutPaiement||'En attente')));
+      const acts=S('td',{style:{display:'flex',gap:'2px'}});
+      acts.appendChild(S('button',{className:'icon-btn',onClick:()=>openModal('editRevenu',{...r})},icon('edit',14)));
       acts.appendChild(S('button',{className:'icon-btn danger',onClick:()=>{if(confirm('Supprimer ce revenu ?'))setState(s=>({revenus:s.revenus.filter(x=>x.id!==r.id)}))}},icon('trash',14)));
       tr.appendChild(acts);tbody.appendChild(tr);
     });
@@ -1535,13 +1542,13 @@ function pgCompta(){
   const expBar=S('div',{style:{display:'flex',gap:'8px',marginTop:'12px'}});
   expBar.appendChild(S('button',{className:'btn btn-s btn-sm',onClick:()=>{
     const all=[...mRevs.map(r=>({type:'Revenu',...r})),...mCouts.map(c=>({type:'Dépense',...c}))];
-    exportCSV(all,['type','desc','cat','montant','date','justif'],'compta-'+mois+'.csv');
+    exportCSV(all,['type','desc','cat','montant','date','datePaiement','statutPaiement','justif'],'compta-'+mois+'.csv');
   }},icon('download',12),' Export CSV'));
   expBar.appendChild(S('button',{className:'btn btn-s btn-sm',onClick:()=>{
     let h='<h2>Extraction comptable — '+mois+'</h2>';
     h+='<p>Revenus: '+fmt(totalRev)+' | Dépenses: '+fmt(totalDep)+' | Résultat: '+fmt(result)+'</p>';
-    h+='<table border="1" cellpadding="4" style="border-collapse:collapse;font-size:11px"><tr><th>Type</th><th>Description</th><th>Catégorie</th><th>Montant</th><th>Date</th><th>Justif.</th></tr>';
-    mRevs.forEach(r=>{h+='<tr><td>Revenu</td><td>'+esc(r.desc)+'</td><td>'+r.type+'</td><td style="color:green">'+fmt(r.montant)+'</td><td>'+r.date+'</td><td>-</td></tr>';});
+    h+='<table border="1" cellpadding="4" style="border-collapse:collapse;font-size:11px"><tr><th>Type</th><th>Description</th><th>Catégorie</th><th>Montant</th><th>Date</th><th>Paiement</th><th>Statut</th><th>Justif.</th></tr>';
+    mRevs.forEach(r=>{h+='<tr><td>Revenu</td><td>'+esc(r.desc)+'</td><td>'+r.type+'</td><td style="color:green">'+fmt(r.montant)+'</td><td>'+r.date+'</td><td>'+(r.datePaiement||'—')+'</td><td>'+(r.statutPaiement||'En attente')+'</td><td>-</td></tr>';});
     mCouts.forEach(c=>{h+='<tr><td>Dépense</td><td>'+esc(c.desc)+'</td><td>'+c.cat+'</td><td style="color:red">'+fmt(c.montant)+'</td><td>'+c.date+'</td><td>'+c.justif+'</td></tr>';});
     h+='</table>';exportPrint('Comptabilité '+mois,h);
   }},icon('printer',12),' PDF'));
@@ -1561,17 +1568,19 @@ function pgCompta(){
   }},icon('download',12),' Justificatifs ('+allPhotos.length+')'));
   sec.appendChild(expBar);
   // Revenue modal
-  if(state.modal==='addRevenu'){
-    sec.appendChild(renderModal('Ajouter un revenu',true,()=>{
+  if(state.modal==='addRevenu'||state.modal==='editRevenu'){
+    sec.appendChild(renderModal(state.modal==='addRevenu'?'Ajouter un revenu':'Modifier le revenu',true,()=>{
       const ed=state.edit;const f=S('div',{className:'form-row'});
       f.appendChild(makeVesselSel(ed.nId,e=>setState(s=>({edit:{...s.edit,nId:+e.target.value}}))));
       f.appendChild(makeInput('Description',null,ed.desc,e=>setState(s=>({edit:{...s.edit,desc:e.target.value}}))));
-      f.appendChild(makeSelect('Type',['Charter','Location','Autre'],ed.type,e=>setState(s=>({edit:{...s.edit,type:e.target.value}}))));
+      f.appendChild(makeSelect('Type',['Charter','APA','Mise à disposition','Location','Autre'],ed.type,e=>setState(s=>({edit:{...s.edit,type:e.target.value}}))));
       f.appendChild(makeInput('Montant (€)','number',ed.montant,e=>setState(s=>({edit:{...s.edit,montant:+e.target.value}}))));
       f.appendChild(makeInput('Date','date',ed.date,e=>setState(s=>({edit:{...s.edit,date:e.target.value}}))));
+      f.appendChild(makeInput('Date de paiement','date',ed.datePaiement||'',e=>setState(s=>({edit:{...s.edit,datePaiement:e.target.value}}))));
+      f.appendChild(makeSelect('Statut paiement',['En attente','Encaissé','Annulé'],ed.statutPaiement||'En attente',e=>setState(s=>({edit:{...s.edit,statutPaiement:e.target.value}}))));
       const btns=S('div',{className:'form-full',style:{display:'flex',justifyContent:'flex-end',gap:'8px',marginTop:'8px'}});
       btns.appendChild(S('button',{className:'btn btn-s',onClick:closeModal},'Annuler'));
-      btns.appendChild(S('button',{className:'btn btn-p',onClick:()=>{const e=state.edit;if(!e.desc)return;setState(s=>({revenus:[...s.revenus,{...e,id:nId(s.revenus)}],modal:null,edit:null}))}},icon('save',14),' Enregistrer'));
+      btns.appendChild(S('button',{className:'btn btn-p',onClick:()=>{const e=state.edit;if(!e.desc)return;if(state.modal==='addRevenu')setState(s=>({revenus:[...s.revenus,{...e,id:nId(s.revenus)}],modal:null,edit:null}));else setState(s=>({revenus:s.revenus.map(r=>r.id===e.id?{...e}:r),modal:null,edit:null}))}},icon('save',14),' Enregistrer'));
       f.appendChild(btns);return f;
     }));
   }
