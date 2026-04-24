@@ -2017,7 +2017,7 @@ function pgJournal(){
       f.appendChild(makeInput('Date','date',ed.date,e=>setState(s=>({edit:{...s.edit,date:e.target.value}}))));
       f.appendChild(makeSelect('Type',['Navigation','Maintenance','Incident','Météo','Autre'],ed.type,e=>setState(s=>({edit:{...s.edit,type:e.target.value}}))));
       f.appendChild(makeInput('Auteur',null,ed.auteur,e=>setState(s=>({edit:{...s.edit,auteur:e.target.value}}))));
-      const tw=makeInput('Texte',null,ed.texte,e=>setState(s=>({edit:{...s.edit,text:e.target.value}})),{textarea:true});tw.className='form-full';f.appendChild(tw);
+      const tw=makeInput('Texte',null,ed.texte,e=>setState(s=>({edit:{...s.edit,texte:e.target.value}})),{textarea:true});tw.className='form-full';f.appendChild(tw);
       // Photos
       const photoSec=S('div',{className:'form-full'});
       photoSec.appendChild(S('label',{className:'form-label'},'📎 Photos / PDF'));
