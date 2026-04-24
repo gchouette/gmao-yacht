@@ -928,7 +928,7 @@ function pgMaint(){
   filterBar.appendChild(famSel);
   sec.appendChild(filterBar);
   // List
-  if(!fm.length){sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucune intervention.'));return sec;}
+  if(!fm.length){sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucune intervention.'));}
   // Apply filters
   let filtered=fm;
   if(state.maintTemporalFilter==='En retard'){
@@ -1215,7 +1215,7 @@ function pgCouts(){
     sec.appendChild(chartSec);
   }
   // Table
-  if(!displayed.length){sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucun coût.'));return sec;}
+  if(!displayed.length){sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucun coût.'));}
   const tbl=S('table',{});
   const thead=S('thead',{});
   const hr=S('tr',{});['Navire','Description','Catégorie','Montant','Date','Fournisseur','Justif.','Pièces',''].forEach(h=>hr.appendChild(S('th',{},h)));
@@ -1644,7 +1644,7 @@ function pgInventaire(){
   // Export
   sec.appendChild(S('button',{className:'btn btn-s btn-sm',style:{marginBottom:'10px'},onClick:()=>exportCSV(fi,['nom','ref','cat','qte','seuil','emplacement','fournisseur'],'inventaire.csv')},icon('download',12),' CSV'));
   // Table
-  if(!fi.length){sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucune pièce.'));return sec;}
+  if(!fi.length){sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucune pièce.'));}
   const cats={};fi.forEach(p=>{if(!cats[p.cat])cats[p.cat]=[];cats[p.cat].push(p)});
   Object.entries(cats).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([cat,items])=>{
     const catCard=S('div',{className:'card',style:{padding:'16px',marginBottom:'12px'}});
@@ -1701,7 +1701,7 @@ function pgJournal(){
   ));
   const fl=filterByVessel(state.journal);
   sec.appendChild(S('button',{className:'btn btn-s btn-sm',style:{marginBottom:'10px'},onClick:()=>exportCSV(fl,['date','type','texte','auteur'],'journal.csv')},icon('download',12),' CSV'));
-  if(!fl.length){sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucune entrée.'));return sec;}
+  if(!fl.length){sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucune entrée.'));}
   fl.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const typeIcons={Navigation:'🧭',Maintenance:'🔧',Incident:'⚠️',Météo:'🌊',Autre:'📋'};
   const typeColors={Navigation:'#2563eb',Maintenance:'#f59e0b',Incident:'#ef4444',Météo:'#06b6d4',Autre:'#64748b'};
@@ -1783,7 +1783,7 @@ function pgDocuments(){
   stats.appendChild(statCard('Expire < 30j',soon.length,'clock',soon.length?'#f59e0b':'#22c55e'));
   sec.appendChild(stats);
   sec.appendChild(S('button',{className:'btn btn-s btn-sm',style:{marginBottom:'10px'},onClick:()=>exportCSV(fd,['nom','cat','echeance','statut','notes'],'documents.csv')},icon('download',12),' CSV'));
-  if(!fd.length){sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucun document.'));return sec;}
+  if(!fd.length){sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucun document.'));}
   const tbl=S('table',{});const thead=S('thead',{});const hr=S('tr',{});
   ['Navire','Document','Catégorie','Échéance','Statut','Fichier','Notes',''].forEach(h=>hr.appendChild(S('th',{},h)));
   thead.appendChild(hr);tbl.appendChild(thead);
@@ -1856,7 +1856,7 @@ function pgReglementaire(){
   stats.appendChild(statCard('Non conformes ⚠️',nonConf,'alert','#ef4444'));
   sec.appendChild(stats);
   sec.appendChild(S('button',{className:'btn btn-s btn-sm',style:{marginBottom:'10px'},onClick:()=>exportCSV(fr,['nom','cat','eauxFr','eauxEtr','echeance','statut','notes'],'reglementaire.csv')},icon('download',12),' CSV'));
-  if(!fr.length){sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucune obligation.'));return sec;}
+  if(!fr.length){sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucune obligation.'));}
   const tbl=S('table',{});const thead=S('thead',{});const hr=S('tr',{});
   ['Navire','Obligation','Catégorie','Eaux FR','Eaux Étr.','Échéance','Statut','Notes',''].forEach(h=>hr.appendChild(S('th',{},h)));
   thead.appendChild(hr);tbl.appendChild(thead);
