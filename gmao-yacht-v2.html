@@ -1529,18 +1529,18 @@ function pgCompta(){
   sec.appendChild(S('h3',{style:{fontSize:'14px',fontWeight:600,margin:'12px 0 8px'}},'Revenus du mois'));
   if(mRevs.length){
     const tbl=S('table',{});const thead=S('thead',{});const hr=S('tr',{});
-    ['Navire','Description','Type','Montant','Date','Paiement','Statut',''].forEach(h=>hr.appendChild(S('th',{},h)));
+    ['Navire','Description','Type','Date','Paiement','Statut','Montant',''].forEach(h=>hr.appendChild(S('th',{style:h==='Montant'?{textAlign:'right'}:{}},h)));
     thead.appendChild(hr);tbl.appendChild(thead);
     const tbody=S('tbody',{});
     mRevs.forEach(r=>{
       const tr=S('tr',{});
       tr.appendChild(S('td',{},vesselName(r.nId)));tr.appendChild(S('td',{},r.desc));
       tr.appendChild(S('td',{},S('span',{className:'tag '+(r.type==='Charter'?'b-cyan':r.type==='APA'?'tag-pending':'tag-ok')},r.type)));
-      tr.appendChild(S('td',{style:{fontWeight:600,color:'#22c55e'}},fmt(r.montant)));
       tr.appendChild(S('td',{},r.date));
       tr.appendChild(S('td',{},r.datePaiement?fD(r.datePaiement):'—'));
       const spCls=r.statutPaiement==='Encaissé'?'tag-ok':r.statutPaiement==='Annulé'?'tag-warn':'tag-pending';
       tr.appendChild(S('td',{},S('span',{className:'tag '+spCls},r.statutPaiement||'En attente')));
+      tr.appendChild(S('td',{style:{fontWeight:600,color:'#22c55e',textAlign:'right'}},fmt(r.montant)));
       const acts=S('td',{style:{display:'flex',gap:'2px'}});
       acts.appendChild(S('button',{className:'icon-btn',onClick:()=>openModal('editRevenu',{...r})},icon('edit',14)));
       acts.appendChild(S('button',{className:'icon-btn danger',onClick:()=>{if(confirm('Supprimer ce revenu ?'))setState(s=>({revenus:s.revenus.filter(x=>x.id!==r.id)}))}},icon('trash',14)));
@@ -1552,15 +1552,16 @@ function pgCompta(){
   sec.appendChild(S('h3',{style:{fontSize:'14px',fontWeight:600,margin:'12px 0 8px'}},'Dépenses du mois'));
   if(mCouts.length){
     const tbl=S('table',{});const thead=S('thead',{});const hr=S('tr',{});
-    ['Navire','Description','Catégorie','Montant','Justif.',''].forEach(h=>hr.appendChild(S('th',{},h)));
+    ['Navire','Description','Catégorie','Justif.','Montant',''].forEach(h=>hr.appendChild(S('th',{style:h==='Montant'?{textAlign:'right'}:{}},h)));
     thead.appendChild(hr);tbl.appendChild(thead);
     const tbody=S('tbody',{});
     mCouts.forEach(c=>{
       const tr=S('tr',{});
       tr.appendChild(S('td',{},vesselName(c.nId)));tr.appendChild(S('td',{},c.desc));
-      tr.appendChild(S('td',{},c.cat));tr.appendChild(S('td',{style:{fontWeight:600,color:'#ef4444'}},fmt(c.montant)));
+      tr.appendChild(S('td',{},c.cat));
       const jCls=c.justif==='Justifié'?'tag-ok':c.justif==='Manquant'?'tag-warn':'tag-pending';
       tr.appendChild(S('td',{},S('span',{className:'tag '+jCls},c.justif)));
+      tr.appendChild(S('td',{style:{fontWeight:600,color:'#ef4444',textAlign:'right'}},fmt(c.montant)));
       tr.appendChild(S('td',{}));tbody.appendChild(tr);
     });
     tbl.appendChild(tbody);sec.appendChild(tbl);
