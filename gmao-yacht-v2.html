@@ -192,13 +192,16 @@ function cloudSave(){
   cloudStatus='saving';updateCloudBadge();
   const d={};DATA_KEYS.forEach(k=>d[k]=state[k]);
   fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'saveAll',data:d}),mode:'no-cors'})
-    .then(()=>{cloudStatus='saved';updateCloudBadge()})
+    .then(()=>{cloudStatus='saved';state._lastCloudSave=Date.now();updateCloudBadge()})
     .catch(()=>{cloudStatus='error';updateCloudBadge()});
 }
-function cloudSaveDebounced(){clearTimeout(cloudSaveTimer);cloudSaveTimer=setTimeout(cloudSave,2000)}
+function cloudSaveDebounced(){clearTimeout(cloudSaveTimer);cloudSaveTimer=setTimeout(()=>{cloudSave();cloudSaveTimer=null},2000)}
+window.addEventListener('beforeunload',()=>{if(cloudSaveTimer){clearTimeout(cloudSaveTimer);cloudSave()}})
 
-function cloudLoad(){
+function cloudLoad(force){
   const url=getCloudUrl();if(!url)return Promise.resolve(false);
+  // Skip auto-load if we have local changes saved after a recent cloud save (debounce pending)
+  if(!force&&cloudSaveTimer){return Promise.resolve(false)}
   cloudStatus='loading';updateCloudBadge();
   return fetch(url+'?action=loadAll')
     .then(r=>r.json())
@@ -2101,7 +2104,7 @@ function render(){
     const urlInp=S('input',{type:'text',value:getCloudUrl(),placeholder:'https://script.google.com/macros/s/…/exec',onInput:e=>setCloudUrl(e.target.value.trim())});
     cfg.appendChild(urlInp);
     const cfgBtns=S('div',{style:{display:'flex',gap:'6px',marginTop:'6px'}});
-    cfgBtns.appendChild(S('button',{className:'btn btn-p btn-sm',onClick:()=>{cloudLoad().then(ok=>{if(ok)alert('Données chargées depuis Google Sheets !');else alert('Aucune donnée trouvée ou erreur.');setState({showCloudCfg:false})})}},icon('download',11),' Charger'));
+    cfgBtns.appendChild(S('button',{className:'btn btn-p btn-sm',onClick:()=>{cloudLoad(true).then(ok=>{if(ok)alert('Données chargées depuis Google Sheets !');else alert('Aucune donnée trouvée ou erreur.');setState({showCloudCfg:false})})}},icon('download',11),' Charger'));
     cfgBtns.appendChild(S('button',{className:'btn btn-s btn-sm',onClick:()=>{cloudSave();setState({showCloudCfg:false})}},icon('upload',11),' Envoyer'));
     cfg.appendChild(cfgBtns);
     if(getCloudUrl()){
@@ -2164,7 +2167,7 @@ state.currentUser=getCurrentUser();
 render();
 updateCloudBadge();
 // Auto-load from cloud if configured
-if(getCloudUrl()){cloudLoad()}
+if(getCloudUrl()){setTimeout(()=>cloudLoad(),500)}
 // Re-render on resize to toggle mobile/desktop layout
 // Re-render on resize only if width changed (avoids Android keyboard height change re-renders)
 let resizeTimer,lastWidth=window.innerWidth;
