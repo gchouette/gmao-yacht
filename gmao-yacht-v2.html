@@ -1552,7 +1552,7 @@ function pgCompta(){
   sec.appendChild(S('h3',{style:{fontSize:'14px',fontWeight:600,margin:'12px 0 8px'}},'Dépenses du mois'));
   if(mCouts.length){
     const tbl=S('table',{});const thead=S('thead',{});const hr=S('tr',{});
-    ['Navire','Description','Catégorie','Justif.','Montant',''].forEach(h=>hr.appendChild(S('th',{style:h==='Montant'?{textAlign:'right'}:{}},h)));
+    ['Navire','Description','Catégorie','Justif.','Montant',''].forEach(h=>hr.appendChild(S('th',{style:h==='Montant'?{textAlign:'right'}:h===''?{width:'60px'}:{}},h)));
     thead.appendChild(hr);tbl.appendChild(thead);
     const tbody=S('tbody',{});
     mCouts.forEach(c=>{
@@ -1562,7 +1562,7 @@ function pgCompta(){
       const jCls=c.justif==='Justifié'?'tag-ok':c.justif==='Manquant'?'tag-warn':'tag-pending';
       tr.appendChild(S('td',{},S('span',{className:'tag '+jCls},c.justif)));
       tr.appendChild(S('td',{style:{fontWeight:600,color:'#ef4444',textAlign:'right'}},fmt(c.montant)));
-      tr.appendChild(S('td',{}));tbody.appendChild(tr);
+      tr.appendChild(S('td',{style:{width:'60px'}}));tbody.appendChild(tr);
     });
     tbl.appendChild(tbody);sec.appendChild(tbl);
   }else sec.appendChild(S('p',{style:{color:'#94a3b8'}},'Aucune dépense ce mois.'));
