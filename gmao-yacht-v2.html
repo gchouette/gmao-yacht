@@ -414,12 +414,12 @@ function photoUpload(photos,onAdd,onRemove){
         const isPdf=f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf');
         if(isPdf){
           if(getCloudUrl()){
-            const url=await uploadPhotoToCloud(ev.target.result,f.name);onAdd(url);
+            const url=await uploadPhotoToCloud(ev.target.result,f.name);onAdd(url);hideUploadToast();
           }else{onAdd(ev.target.result);hideUploadToast()}
         }else{
           const compressed=await compressImage(ev.target.result,1200,900,0.6);
           if(getCloudUrl()){
-            const url=await uploadPhotoToCloud(compressed,f.name);onAdd(url);
+            const url=await uploadPhotoToCloud(compressed,f.name);onAdd(url);hideUploadToast();
           }else{onAdd(compressed);hideUploadToast()}
         }
       };
@@ -812,7 +812,7 @@ function pgFlotte(){
         const avatarZone=S('div',{style:{width:'56px',height:'56px',borderRadius:'50%',border:'2px dashed #cbd5e1',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',background:'#fafbfc'}});
         avatarZone.appendChild(icon('plus',18));
         const avatarInp=S('input',{type:'file',accept:'image/*',style:{display:'none'}});
-        avatarInp.addEventListener('change',async ev=>{const file=ev.target.files[0];if(!file||file.size>5*1024*1024)return;showUploadToast('Chargement de la photo…');const r=new FileReader();r.onload=async re=>{const compressed=await compressImage(re.target.result,400,400,0.7);const url=getCloudUrl()?await uploadPhotoToCloud(compressed,file.name):compressed;if(!getCloudUrl())hideUploadToast();setState(s=>({edit:{...s.edit,photo:url}}))};r.readAsDataURL(file)});
+        avatarInp.addEventListener('change',async ev=>{const file=ev.target.files[0];if(!file||file.size>5*1024*1024)return;showUploadToast('Chargement de la photo…');const r=new FileReader();r.onload=async re=>{const compressed=await compressImage(re.target.result,400,400,0.7);const url=getCloudUrl()?await uploadPhotoToCloud(compressed,file.name):compressed;hideUploadToast();setState(s=>({edit:{...s.edit,photo:url}}))};r.readAsDataURL(file)});
         avatarZone.addEventListener('click',()=>avatarInp.click());avatarZone.appendChild(avatarInp);
         photoDiv.appendChild(avatarZone);
         photoDiv.appendChild(S('span',{style:{fontSize:'12px',color:'#94a3b8'}},'Ajouter une photo'));
@@ -1187,7 +1187,8 @@ function pgMaint(){
               const isImg=file.type.startsWith('image/');
               let fileData=re.target.result;
               if(isImg)fileData=await compressImage(fileData,1200,900,0.7);
-              if(getCloudUrl()){fileData=await uploadPhotoToCloud(fileData,file.name)}else{hideUploadToast()}
+              if(getCloudUrl()){fileData=await uploadPhotoToCloud(fileData,file.name)}
+              hideUploadToast();
               setState(s=>({edit:{...s.edit,factures:[...s.edit.factures.slice(0,i),{...fi,fichier:fileData,fichierNom:file.name},...s.edit.factures.slice(i+1)]}}));
             };
             reader.readAsDataURL(file);
@@ -1957,7 +1958,7 @@ function pgDocuments(){
           const r=new FileReader();r.onload=async re=>{
             fZone.innerHTML='';fZone.appendChild(S('span',{style:{fontSize:'11px',color:'#64748b'}},'Upload en cours…'));
             const driveUrl=await uploadPhotoToCloud(re.target.result,file.name);
-            if(!getCloudUrl())hideUploadToast();
+            hideUploadToast();
             setState(s=>({edit:{...s.edit,fichier:driveUrl,fichierNom:file.name}}));
           };r.readAsDataURL(file);});
         fZone.addEventListener('click',()=>fInp.click());fZone.appendChild(fInp);
@@ -2044,7 +2045,7 @@ function pgReglementaire(){
         const fZone=S('div',{className:'photo-upload-zone',style:{width:'100%',height:'48px',flexDirection:'row',gap:'6px'}});
         fZone.appendChild(icon('upload',14));fZone.appendChild(S('span',{style:{fontSize:'11px'}},'Cliquer pour ajouter un fichier'));
         const fInp=S('input',{type:'file',accept:'image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt',style:{display:'none'}});
-        fInp.addEventListener('change',async ev=>{const file=ev.target.files[0];if(!file||file.size>10*1024*1024)return;showUploadToast('Chargement de '+file.name+'…');const r=new FileReader();r.onload=async re=>{const b64=re.target.result;const url=await uploadPhotoToCloud(b64,file.name);if(!getCloudUrl())hideUploadToast();setState(s=>({edit:{...s.edit,fichier:url,fichierNom:file.name}}));};r.readAsDataURL(file);});
+        fInp.addEventListener('change',async ev=>{const file=ev.target.files[0];if(!file||file.size>10*1024*1024)return;showUploadToast('Chargement de '+file.name+'…');const r=new FileReader();r.onload=async re=>{const b64=re.target.result;const url=await uploadPhotoToCloud(b64,file.name);hideUploadToast();setState(s=>({edit:{...s.edit,fichier:url,fichierNom:file.name}}));};r.readAsDataURL(file);});
         fZone.addEventListener('click',()=>fInp.click());fZone.appendChild(fInp);
         fileSec.appendChild(fZone);
       }
