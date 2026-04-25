@@ -452,7 +452,7 @@ function photoGallery(photos){
 // ─── UI Builders ───
 function makeSelect(label,options,val,onChange){const w=S('div');if(label)w.appendChild(S('label',{className:'form-label'},label));const s=S('select',{className:'sel',onChange});s.appendChild(S('option',{value:''},'— Sélectionner —'));options.forEach(o=>{const opt=S('option',{value:o},o);if(o===val)opt.selected=true;s.appendChild(opt)});w.appendChild(s);return w}
 let _noRender=false;
-function makeInput(label,type,val,onChange,opts={}){const w=S('div');if(label)w.appendChild(S('label',{className:'form-label'},label));if(opts.textarea){const ta=S('textarea',{className:'input',value:val||''});ta.addEventListener('input',()=>{_noRender=true;onChange({target:{value:ta.value}});_noRender=false});ta.addEventListener('change',()=>setState(s=>s));w.appendChild(ta)}else if(type==='date'||type==='month'){const inp=S('input',{className:'input',type:type,value:val==null?'':val});inp.addEventListener('change',()=>{_noRender=true;onChange({target:{value:inp.value}});_noRender=false});w.appendChild(inp)}else{const inp=S('input',{className:'input',type:type||'text',value:val==null?'':val});inp.addEventListener('input',()=>{_noRender=true;onChange({target:{value:inp.value}});_noRender=false});inp.addEventListener('change',()=>setState(s=>s));if(opts.step)inp.step=opts.step;w.appendChild(inp)}return w}
+function makeInput(label,type,val,onChange,opts={}){const w=S('div');if(label)w.appendChild(S('label',{className:'form-label'},label));if(opts.textarea){const ta=S('textarea',{className:'input',value:val||''});ta.addEventListener('input',()=>{_noRender=true;onChange({target:{value:ta.value}});_noRender=false});ta.addEventListener('change',()=>{_noRender=true;onChange({target:{value:ta.value}});_noRender=false;persistState()});w.appendChild(ta)}else if(type==='date'||type==='month'){const inp=S('input',{className:'input',type:type,value:val==null?'':val});inp.addEventListener('change',()=>{_noRender=true;onChange({target:{value:inp.value}});_noRender=false});w.appendChild(inp)}else{const inp=S('input',{className:'input',type:type||'text',value:val==null?'':val});inp.addEventListener('input',()=>{_noRender=true;onChange({target:{value:inp.value}});_noRender=false});inp.addEventListener('change',()=>{_noRender=true;onChange({target:{value:inp.value}});_noRender=false;persistState()});if(opts.step)inp.step=opts.step;w.appendChild(inp)}return w}
 function makeVesselSel(val,onChange){const w=S('div');w.appendChild(S('label',{className:'form-label'},'Navire'));const s=S('select',{className:'sel',onChange});allowedVessels().forEach(v=>{const o=S('option',{value:v.id},v.nom);if(v.id==val)o.selected=true;s.appendChild(o)});w.appendChild(s);return w}
 function makeCrewSel(nId,val,onChange){const w=S('div');w.appendChild(S('label',{className:'form-label'},'Assigné à'));const s=S('select',{className:'sel',onChange});s.appendChild(S('option',{value:''},'— Non assigné —'));state.equipage.filter(e=>e.nId===nId||!e.nId).forEach(e=>{const o=S('option',{value:e.id},e.nom+' ('+e.role+')');if(e.id==val)o.selected=true;s.appendChild(o)});w.appendChild(s);return w}
 function openModal(n,d){setState({modal:n,edit:d})}
@@ -825,15 +825,12 @@ function pgFlotte(){
       f.appendChild(makeInput('N° Passeport',null,ed.numPasseport,e=>setState(s=>({edit:{...s.edit,numPasseport:e.target.value}}))));
       f.appendChild(makeInput('Salaire mensuel (€)','number',ed.salaire,e=>setState(s=>({edit:{...s.edit,salaire:+e.target.value}}))));
       f.appendChild(makeInput('Charges mensuelles (€)','number',ed.charges,e=>setState(s=>({edit:{...s.edit,charges:+e.target.value}}))));
+      f.appendChild(makeInput('Date début','date',ed.dateDebut,e=>setState(s=>({edit:{...s.edit,dateDebut:e.target.value}}))));
       const permDiv=S('div',{className:'form-group'});
       permDiv.appendChild(S('label',{style:{display:'flex',alignItems:'center',gap:'6px'}},S('input',{type:'checkbox',checked:ed.permanent,onchange:e=>setState(s=>({edit:{...s.edit,permanent:e.target.checked}}))}), 'Permanent'));
       f.appendChild(permDiv);
       if(!ed.permanent){
-        const datesDiv=S('div',{className:'form-group',style:{display:'flex',flexDirection:'column',gap:'8px'}});
-        const d1=makeInput('Date début contrat','date',ed.dateDebut,e=>setState(s=>({edit:{...s.edit,dateDebut:e.target.value}})));
-        const d2=makeInput('Date fin contrat','date',ed.dateFin,e=>setState(s=>({edit:{...s.edit,dateFin:e.target.value}})));
-        datesDiv.appendChild(d1);datesDiv.appendChild(d2);
-        f.appendChild(datesDiv);
+        f.appendChild(makeInput('Date fin contrat','date',ed.dateFin,e=>setState(s=>({edit:{...s.edit,dateFin:e.target.value}}))));
       }
       const btns=S('div',{className:'form-full',style:{display:'flex',justifyContent:'flex-end',gap:'8px',marginTop:'8px'}});
       btns.appendChild(S('button',{className:'btn btn-s',onClick:closeModal},'Annuler'));
@@ -1174,12 +1171,12 @@ function pgMaint(){
         const col1=S('div',{style:{flex:1,minWidth:'200px',display:'flex',flexDirection:'column',gap:'4px'}});
         const nomInp=S('input',{type:'text',className:'input',style:{fontSize:'11px'},placeholder:'Nom du devis',value:fi.nom||''});
         nomInp.addEventListener('input',e=>{_noRender=true;setState(s=>({edit:{...s.edit,factures:[...s.edit.factures.slice(0,i),{...s.edit.factures[i],nom:e.target.value},...s.edit.factures.slice(i+1)]}}));_noRender=false});
-        nomInp.addEventListener('change',()=>setState(s=>s));
+        nomInp.addEventListener('change',()=>{_noRender=true;setState(s=>({edit:{...s.edit,factures:[...s.edit.factures.slice(0,i),{...s.edit.factures[i],nom:nomInp.value},...s.edit.factures.slice(i+1)]}}));_noRender=false;persistState()});
         col1.appendChild(nomInp);
         const row2=S('div',{style:{display:'flex',gap:'4px'}});
         const montInp=S('input',{type:'number',className:'input',style:{flex:1,fontSize:'11px'},placeholder:'Montant €',value:fi.montant||0});
         montInp.addEventListener('input',e=>{_noRender=true;setState(s=>({edit:{...s.edit,factures:[...s.edit.factures.slice(0,i),{...s.edit.factures[i],montant:+e.target.value},...s.edit.factures.slice(i+1)]}}));_noRender=false});
-        montInp.addEventListener('change',()=>setState(s=>s));
+        montInp.addEventListener('change',()=>{_noRender=true;setState(s=>({edit:{...s.edit,factures:[...s.edit.factures.slice(0,i),{...s.edit.factures[i],montant:+montInp.value},...s.edit.factures.slice(i+1)]}}));_noRender=false;persistState()});
         row2.appendChild(montInp);
         const dateInp=S('input',{type:'date',className:'input',style:{flex:1,fontSize:'11px'},value:fi.date||''});
         dateInp.addEventListener('change',e=>{_noRender=true;setState(s=>({edit:{...s.edit,factures:[...s.edit.factures.slice(0,i),{...s.edit.factures[i],date:e.target.value},...s.edit.factures.slice(i+1)]}}));_noRender=false});
@@ -1287,7 +1284,8 @@ function pgCouts(){
   const totalC=fc.reduce((s,c)=>s+c.montant,0);
   const stats=S('div',{className:'stats'});
   // Crew salary totals
-  const crewForCouts=filterByVessel(state.equipage).filter(e=>e.actif&&(e.salaire||e.charges));
+  const curMo=new Date().toISOString().slice(0,7);
+  const crewForCouts=filterByVessel(state.equipage).filter(e=>e.actif&&(e.salaire||e.charges)&&(!e.dateDebut||e.dateDebut.slice(0,7)<=curMo)&&(e.permanent!==false||!e.dateFin||e.dateFin.slice(0,7)>=curMo));
   const totalSal=crewForCouts.reduce((s,c)=>s+(c.salaire||0),0);
   const totalChg=crewForCouts.reduce((s,c)=>s+(c.charges||0),0);
   const totalCrew=totalSal+totalChg;
@@ -1301,7 +1299,7 @@ function pgCouts(){
     const crewCard=S('div',{className:'card',style:{marginBottom:'12px',padding:'16px'}});
     const crewHead=S('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'10px'}});
     crewHead.appendChild(S('div',{style:{fontWeight:600,fontSize:'14px',color:'#1e293b'}},'💰 Masse salariale mensuelle'));
-    const genMo=new Date().toISOString().slice(0,7);
+    const genMo=curMo;
     const alreadyGen=state.couts.filter(c=>c.crewCostId&&c.crewCostId.endsWith('-'+genMo)).length;
     const expectedGen=crewForCouts.reduce((n,c)=>(n+(c.salaire?1:0)+(c.charges?1:0)),0);
     if(alreadyGen>=expectedGen){
@@ -1718,25 +1716,45 @@ function pgCompta(){
     mCouts=filterByVessel(state.couts).filter(c=>c.date&&c.date>=d0&&c.date<=d1);
     mRevs=filterByVessel(state.revenus).filter(r=>r.date&&r.date>=d0&&r.date<=d1);
   }
-  // Salary generation button
+  // Salary generation button — adapts to mois/année/période
   const crewWithSalary=state.equipage.filter(e=>e.actif&&(e.salaire||e.charges));
   if(crewWithSalary.length){
-    const genMonth=state.comptaMode==='mois'?(state.comptaMois||curMonth):curMonth;
-    const alreadyGenerated=state.couts.filter(c=>c.crewCostId&&c.crewCostId.endsWith('-'+genMonth)).length;
-    const expectedCount=crewWithSalary.reduce((n,c)=>{
-      if(c.dateDebut&&c.dateDebut.slice(0,7)>genMonth)return n;
-      if(c.permanent===false&&c.dateFin&&c.dateFin.slice(0,7)<genMonth)return n;
-      return n+(c.salaire?1:0)+(c.charges?1:0);
-    },0);
+    // Compute list of months to generate for
+    function getMonthsForPeriod(){
+      if(state.comptaMode==='mois')return [state.comptaMois||curMonth];
+      if(state.comptaMode==='annee'){
+        const yr=state.comptaAnnee||String(now.getFullYear());
+        const ms=[];for(let m=1;m<=12;m++)ms.push(yr+'-'+String(m).padStart(2,'0'));return ms;
+      }
+      // période
+      const d0=state.comptaDebut||curMonth+'-01';const d1=state.comptaFin||now.toISOString().slice(0,10);
+      const startM=d0.slice(0,7);const endM=d1.slice(0,7);
+      const ms=[];let cur=startM;
+      while(cur<=endM){ms.push(cur);const [y,m]=cur.split('-').map(Number);const nm=m===12?1:m+1;const ny=m===12?y+1:y;cur=ny+'-'+String(nm).padStart(2,'0');if(ms.length>120)break;}
+      return ms;
+    }
+    const genMonths=getMonthsForPeriod();
+    // Count already generated & expected across all months
+    let alreadyGenerated=0,expectedCount=0;
+    genMonths.forEach(gm=>{
+      alreadyGenerated+=state.couts.filter(c=>c.crewCostId&&c.crewCostId.endsWith('-'+gm)).length;
+      crewWithSalary.forEach(c=>{
+        if(c.dateDebut&&c.dateDebut.slice(0,7)>gm)return;
+        if(c.permanent===false&&c.dateFin&&c.dateFin.slice(0,7)<gm)return;
+        expectedCount+=(c.salaire?1:0)+(c.charges?1:0);
+      });
+    });
+    const periodLabel=state.comptaMode==='mois'?(state.comptaMois||curMonth):state.comptaMode==='annee'?(state.comptaAnnee||String(now.getFullYear())):'la période';
     const salBar=S('div',{style:{display:'flex',gap:'8px',alignItems:'center',marginBottom:'10px',flexWrap:'wrap'}});
-    if(alreadyGenerated>=expectedCount){
-      salBar.appendChild(S('span',{style:{fontSize:'12px',color:'#22c55e'}},icon('check',12)+' Salaires '+genMonth+' générés ('+alreadyGenerated+' entrées)'));
+    if(alreadyGenerated>=expectedCount&&expectedCount>0){
+      salBar.appendChild(S('span',{style:{fontSize:'12px',color:'#22c55e'}},icon('check',12)+' Salaires '+periodLabel+' générés ('+alreadyGenerated+' entrées)'));
     }else{
+      const btnLabel=state.comptaMode==='mois'?'Générer salaires '+periodLabel:state.comptaMode==='annee'?'Générer salaires '+periodLabel:'Générer salaires période';
       salBar.appendChild(S('button',{className:'btn btn-sm',style:{background:'#8b5cf6',color:'#fff',border:'none'},onClick:()=>{
-        const n=generateCrewCosts(genMonth);
-        if(n)alert(n+' entrée(s) de salaire/charges créée(s) pour '+genMonth);
-        else alert('Salaires déjà générés pour '+genMonth);
-      }},icon('user',12),' Générer salaires '+genMonth));
+        let total=0;genMonths.forEach(gm=>{total+=generateCrewCosts(gm);});
+        if(total)alert(total+' entrée(s) de salaire/charges créée(s) pour '+periodLabel);
+        else alert('Salaires déjà générés pour '+periodLabel);
+      }},icon('user',12),' '+btnLabel));
       if(alreadyGenerated>0)salBar.appendChild(S('span',{style:{fontSize:'11px',color:'#f59e0b'}},alreadyGenerated+'/'+expectedCount+' déjà générés'));
     }
     sec.appendChild(salBar);
@@ -1966,7 +1984,7 @@ function pgJournal(){
     S('h2',{},'📝 Journal de bord'),
     S('div',{style:{display:'flex',gap:'8px'}},
       makeVesselFilter(),
-      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addLog',{nId:state.vessels[0]?.id||1,date:today(),type:'Navigation',text:'',auteur:'',photos:[]})},icon('plus',14),' Nouvelle entrée')
+      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addLog',{nId:state.vessels[0]?.id||1,date:today(),type:'Navigation',texte:'',auteur:'',photos:[]})},icon('plus',14),' Nouvelle entrée')
     )
   ));
   const fl=filterByVessel(state.journal);
