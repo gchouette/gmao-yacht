@@ -186,24 +186,36 @@ const DATA_KEYS=['vessels','equipage','composants','maint','couts','inventaire',
 
 // ─── Cloud sync ───
 function getCloudUrl(){try{const c=JSON.parse(localStorage.getItem(LS_CFG)||'{}');return c.appsScriptUrl||''}catch(e){return ''}}
-function setCloudUrl(url){try{const c=JSON.parse(localStorage.getItem(LS_CFG)||'{}');c.appsScriptUrl=url;localStorage.setItem(LS_CFG,JSON.stringify(c))}catch(e){}}
+function setCloudUrl(url){try{const c=JSON.parse(localStorage.getItem(LS_CFG)||'{}');c.appsScriptUrl=url;localStorage.setItem(LS_CFG,JSON.stringify(c));if(url){_blockSaveUntilLoaded=true;console.log('[GMAO Cloud] URL set — blocking saves until cloud load completes')}}catch(e){}}
+let _blockSaveUntilLoaded=false;
 let cloudSaveTimer=null;
 let cloudStatus='idle'; // idle, saving, saved, error, loading
 function updateCloudBadge(){const el=document.getElementById('cloud-badge');if(!el)return;const url=getCloudUrl();if(!url){el.textContent='☁ Non connecté';el.className='cloud-badge off';return}if(cloudStatus==='saving'){el.textContent='☁ Synchronisation…';el.className='cloud-badge saving'}else if(cloudStatus==='saved'){el.textContent='☁ Synchronisé';el.className='cloud-badge ok'}else if(cloudStatus==='error'){el.textContent='☁ Erreur sync';el.className='cloud-badge err'}else if(cloudStatus==='loading'){el.textContent='☁ Chargement…';el.className='cloud-badge saving'}else{el.textContent='☁ Connecté';el.className='cloud-badge ok'}}
 
 function cloudSave(){
   const url=getCloudUrl();if(!url)return;
+  if(_blockSaveUntilLoaded){console.log('[GMAO Cloud] Save blocked — waiting for initial cloud load');return}
   cloudStatus='saving';updateCloudBadge();
   const d={};DATA_KEYS.forEach(k=>d[k]=state[k]);
   const payload=JSON.stringify({action:'saveAll',data:d});
+  console.log('[GMAO Cloud] Saving…',Object.keys(d).map(k=>k+':'+((d[k]&&d[k].length)||0)).join(', '));
   fetch(url,{method:'POST',body:payload,redirect:'follow'})
-    .then(r=>{try{return r.json()}catch(e){return{}}})
-    .then(j=>{if(j&&j.ok){cloudStatus='saved'}else{cloudStatus='saved'}state._lastCloudSave=Date.now();updateCloudBadge()})
-    .catch(()=>{
-      // Fallback: retry with no-cors
+    .then(r=>{
+      console.log('[GMAO Cloud] Response status:',r.status,r.redirected?'(redirected)':'');
+      return r.json().catch(()=>null);
+    })
+    .then(j=>{
+      console.log('[GMAO Cloud] Response body:',j);
+      if(j&&j.ok){cloudStatus='saved';state._lastCloudSave=Date.now()}
+      else if(j&&j.error){cloudStatus='error';console.error('[GMAO Cloud] Save error:',j.error)}
+      else{cloudStatus='error';console.error('[GMAO Cloud] Unexpected response:',j)}
+      updateCloudBadge();
+    })
+    .catch(e=>{
+      console.error('[GMAO Cloud] Fetch failed:',e.message,', trying no-cors fallback…');
       fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:payload,mode:'no-cors'})
-        .then(()=>{cloudStatus='saved';state._lastCloudSave=Date.now();updateCloudBadge()})
-        .catch(()=>{cloudStatus='error';updateCloudBadge()});
+        .then(()=>{cloudStatus='saved';state._lastCloudSave=Date.now();updateCloudBadge();console.log('[GMAO Cloud] no-cors fallback sent (no confirmation)')})
+        .catch(e2=>{cloudStatus='error';updateCloudBadge();console.error('[GMAO Cloud] Fallback also failed:',e2.message)});
     });
 }
 function cloudSaveDebounced(){clearTimeout(cloudSaveTimer);cloudSaveTimer=setTimeout(()=>{cloudSave();cloudSaveTimer=null},800)}
@@ -214,16 +226,16 @@ window.addEventListener('pagehide',()=>{if(cloudSaveTimer){clearTimeout(cloudSav
 
 function cloudLoad(force){
   const url=getCloudUrl();if(!url)return Promise.resolve(false);
-  // Skip auto-load if we have local changes saved after a recent cloud save (debounce pending)
-  if(!force&&cloudSaveTimer){return Promise.resolve(false)}
+  if(!force&&cloudSaveTimer){console.log('[GMAO Cloud] Load skipped (save pending)');return Promise.resolve(false)}
   cloudStatus='loading';updateCloudBadge();
+  console.log('[GMAO Cloud] Loading from cloud…');
   return fetch(url+'?action=loadAll')
     .then(r=>r.json())
     .then(d=>{
       let hasData=false;
+      console.log('[GMAO Cloud] Loaded:',Object.keys(d).map(k=>k+':'+((d[k]&&d[k].length)||0)).join(', '));
       DATA_KEYS.forEach(k=>{
         if(d[k]!==undefined){
-          // Merge: preserve local fields that may not exist in cloud schema yet
           if(Array.isArray(d[k])&&d[k].length&&state[k]&&state[k].length){
             const localById={};state[k].forEach(item=>{if(item.id)localById[item.id]=item});
             d[k]=d[k].map(item=>{
@@ -235,11 +247,12 @@ function cloudLoad(force){
           state[k]=Array.isArray(d[k])?d[k]:[];hasData=true;
         }
       });
-      cloudStatus='saved';updateCloudBadge();
+      cloudStatus='saved';_blockSaveUntilLoaded=false;updateCloudBadge();
+      console.log('[GMAO Cloud] Load complete — saves unblocked');
       if(hasData){const sd={};DATA_KEYS.forEach(k=>sd[k]=state[k]);localStorage.setItem(LS_KEY,JSON.stringify(sd));render()}
       return hasData;
     })
-    .catch(e=>{cloudStatus='error';updateCloudBadge();return false});
+    .catch(e=>{cloudStatus='error';_blockSaveUntilLoaded=false;updateCloudBadge();console.error('[GMAO Cloud] Load failed:',e.message);return false});
 }
 
 let _uploadToastEl=null;let _uploadCount=0;
@@ -2448,8 +2461,8 @@ state.currentUser=getCurrentUser();
 // Initial render
 render();
 updateCloudBadge();
-// Auto-load from cloud if configured
-if(getCloudUrl()){setTimeout(()=>cloudLoad(),500)}
+// Auto-load from cloud if configured — block saves until loaded
+if(getCloudUrl()){_blockSaveUntilLoaded=true;setTimeout(()=>cloudLoad(true),500)}
 // Re-render on resize to toggle mobile/desktop layout
 // Re-render on resize only if width changed (avoids Android keyboard height change re-renders)
 let resizeTimer,lastWidth=window.innerWidth;
