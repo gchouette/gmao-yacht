@@ -221,7 +221,7 @@ function cloudSave(){
 function cloudSaveDebounced(){clearTimeout(cloudSaveTimer);cloudSaveTimer=setTimeout(()=>{cloudSave();cloudSaveTimer=null},800)}
 // Save on page close/hide (beforeunload for desktop, visibilitychange+pagehide for mobile)
 window.addEventListener('beforeunload',()=>{if(cloudSaveTimer){clearTimeout(cloudSaveTimer);cloudSave()}});
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){if(cloudSaveTimer){clearTimeout(cloudSaveTimer);cloudSave();cloudSaveTimer=null}}else if(document.visibilityState==='visible'){if(getCloudUrl())cloudLoad(true)}});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){if(cloudSaveTimer){clearTimeout(cloudSaveTimer);cloudSave();cloudSaveTimer=null}}else if(document.visibilityState==='visible'){if(getCloudUrl()){const sinceSave=Date.now()-(state._lastCloudSave||0);const delay=sinceSave<5000?5000-sinceSave:500;setTimeout(()=>cloudLoad(true),delay)}}});
 window.addEventListener('pagehide',()=>{if(cloudSaveTimer){clearTimeout(cloudSaveTimer);cloudSave();cloudSaveTimer=null}})
 
 function cloudLoad(force){
