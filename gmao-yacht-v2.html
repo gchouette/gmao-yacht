@@ -219,19 +219,17 @@ function cloudLoad(force){
     .then(d=>{
       let hasData=false;
       DATA_KEYS.forEach(k=>{
-        if(d[k]&&d[k].length){
+        if(d[k]!==undefined){
           // Merge: preserve local fields that may not exist in cloud schema yet
-          if(state[k]&&state[k].length&&d[k].length){
-            const cloudById={};d[k].forEach(item=>{if(item.id)cloudById[item.id]=item});
+          if(Array.isArray(d[k])&&d[k].length&&state[k]&&state[k].length){
             const localById={};state[k].forEach(item=>{if(item.id)localById[item.id]=item});
-            // Use cloud data but restore local-only fields
             d[k]=d[k].map(item=>{
               const local=localById[item.id];
               if(local){Object.keys(local).forEach(key=>{if(item[key]===undefined||item[key]==='')item[key]=local[key]})}
               return item;
             });
           }
-          state[k]=d[k];hasData=true;
+          state[k]=Array.isArray(d[k])?d[k]:[];hasData=true;
         }
       });
       cloudStatus='saved';updateCloudBadge();
@@ -755,7 +753,7 @@ function pgFlotte(){
         S('div',{style:{display:'flex',alignItems:'center',gap:'8px',flexWrap:'wrap'}},avatar,S('span',{style:{fontWeight:500}},c.nom),' ',S('span',{style:{color:'#64748b'}},'('+c.role+')'),(c.permanent===false&&c.dateFin)?' — '+c.dateFin:c.permanent!==false?' (permanent)':'',salInfo),
         S('div',{style:{display:'flex',gap:'2px'}},
           S('button',{className:'icon-btn',style:{color:'#2563eb'},onClick:()=>openModal('editCrew',{...c})},icon('edit',14)),
-          S('button',{className:'icon-btn danger',style:{color:'#dc2626'},onClick:()=>{if(confirm('Supprimer cet équipier ?')){const cid=c.id;setState(s=>({equipage:s.equipage.filter(x=>x.id!==cid),couts:s.couts.filter(x=>!(x.crewCostId&&(x.crewCostId.startsWith('crew-sal-'+cid+'-')||x.crewCostId.startsWith('crew-chg-'+cid+'-'))))}))}}},icon('trash',14))
+          S('button',{className:'icon-btn danger',style:{color:'#dc2626'},onClick:()=>{if(confirm('Supprimer cet équipier ?')){const cid=c.id;setState(s=>({equipage:s.equipage.filter(x=>x.id!==cid),couts:s.couts.filter(x=>!(x.crewCostId&&x.crewCostId.startsWith('crew-sc-'+cid+'-')))}))}}},icon('trash',14))
         )
       ));
     });
@@ -1301,7 +1299,7 @@ function pgCouts(){
     crewHead.appendChild(S('div',{style:{fontWeight:600,fontSize:'14px',color:'#1e293b'}},'💰 Masse salariale mensuelle'));
     const genMo=curMo;
     const alreadyGen=state.couts.filter(c=>c.crewCostId&&c.crewCostId.endsWith('-'+genMo)).length;
-    const expectedGen=crewForCouts.reduce((n,c)=>(n+(c.salaire?1:0)+(c.charges?1:0)),0);
+    const expectedGen=crewForCouts.length;
     if(alreadyGen>=expectedGen){
       crewHead.appendChild(S('span',{style:{fontSize:'11px',color:'#22c55e',fontWeight:500}},'✓ Salaires '+genMo+' générés'));
     }else{
@@ -1636,21 +1634,14 @@ function generateCrewCosts(month){
       // Skip if crew not active during this month
       if(c.dateDebut&&c.dateDebut.slice(0,7)>month)return;
       if(c.permanent===false&&c.dateFin&&c.dateFin.slice(0,7)<month)return;
-      // Salary entry
-      if(c.salaire){
-        const salKey='crew-sal-'+c.id+'-'+month;
-        if(!newCouts.find(x=>x.crewCostId===salKey)){
-          newCouts.push({id:nId(newCouts),nId:c.nId,cat:'Équipage',desc:'💰 Salaire — '+c.nom+' ('+c.role+')',montant:c.salaire,date:month+'-01',fournisseur:'',justif:'En attente',photos:[],crewCostId:salKey,datePaiement:'',statutPaiement:'En attente'});
-          count++;
-        }
-      }
-      // Charges entry
-      if(c.charges){
-        const chgKey='crew-chg-'+c.id+'-'+month;
-        if(!newCouts.find(x=>x.crewCostId===chgKey)){
-          newCouts.push({id:nId(newCouts),nId:c.nId,cat:'Équipage',desc:'💰 Charges — '+c.nom+' ('+c.role+')',montant:c.charges,date:month+'-01',fournisseur:'',justif:'En attente',photos:[],crewCostId:chgKey,datePaiement:'',statutPaiement:'En attente'});
-          count++;
-        }
+      // Month/year label for description
+      const [mY,mM]=month.split('-');const moisNoms=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];const moisLabel=moisNoms[parseInt(mM,10)-1]+' '+mY;
+      // Combined salary + charges entry
+      const crewKey='crew-sc-'+c.id+'-'+month;
+      if(!newCouts.find(x=>x.crewCostId===crewKey)){
+        const totalMontant=(c.salaire||0)+(c.charges||0);
+        newCouts.push({id:nId(newCouts),nId:c.nId,cat:'Équipage',desc:'💰 Salaire et charges — '+c.nom+' — '+moisLabel,montant:totalMontant,date:month+'-01',fournisseur:'',justif:'En attente',photos:[],crewCostId:crewKey,datePaiement:'',statutPaiement:'En attente'});
+        count++;
       }
     });
     return{couts:newCouts};
@@ -1741,7 +1732,7 @@ function pgCompta(){
       crewWithSalary.forEach(c=>{
         if(c.dateDebut&&c.dateDebut.slice(0,7)>gm)return;
         if(c.permanent===false&&c.dateFin&&c.dateFin.slice(0,7)<gm)return;
-        expectedCount+=(c.salaire?1:0)+(c.charges?1:0);
+        expectedCount+=1;
       });
     });
     const periodLabel=state.comptaMode==='mois'?(state.comptaMois||curMonth):state.comptaMode==='annee'?(state.comptaAnnee||String(now.getFullYear())):'la période';
