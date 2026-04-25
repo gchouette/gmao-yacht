@@ -676,7 +676,7 @@ function pgFlotte(){
         zone.appendChild(icon('upload',14));
         zone.appendChild(S('span',{style:{fontSize:'11px'}},'Cliquer pour ajouter une photo'));
         const inp=S('input',{type:'file',accept:'image/*',style:{display:'none'}});
-        inp.addEventListener('change',e=>{const f2=e.target.files[0];if(!f2||f2.size>5*1024*1024)return;const r=new FileReader();r.onload=ev=>setState(s=>({edit:{...s.edit,photo:ev.target.result}}));r.readAsDataURL(f2);});
+        inp.addEventListener('change',async e=>{const f2=e.target.files[0];if(!f2||f2.size>5*1024*1024)return;showUploadToast('Chargement de la photo…');const r=new FileReader();r.onload=async ev=>{const compressed=await compressImage(ev.target.result,800,600,0.7);const url=getCloudUrl()?await uploadPhotoToCloud(compressed,f2.name):compressed;hideUploadToast();setState(s=>({edit:{...s.edit,photo:url}}))};r.readAsDataURL(f2);});
         zone.addEventListener('click',()=>inp.click());
         zone.appendChild(inp);
         photoSec.appendChild(zone);
