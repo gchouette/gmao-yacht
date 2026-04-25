@@ -188,6 +188,7 @@ const DATA_KEYS=['vessels','equipage','composants','maint','couts','inventaire',
 function getCloudUrl(){try{const c=JSON.parse(localStorage.getItem(LS_CFG)||'{}');return c.appsScriptUrl||''}catch(e){return ''}}
 function setCloudUrl(url){try{const c=JSON.parse(localStorage.getItem(LS_CFG)||'{}');c.appsScriptUrl=url;localStorage.setItem(LS_CFG,JSON.stringify(c));if(url){_blockSaveUntilLoaded=true;console.log('[GMAO Cloud] URL set — blocking saves until cloud load completes')}}catch(e){}}
 let _blockSaveUntilLoaded=false;
+let _localDirty=false;
 let cloudSaveTimer=null;
 let cloudStatus='idle'; // idle, saving, saved, error, loading
 function updateCloudBadge(){const el=document.getElementById('cloud-badge');if(!el)return;const url=getCloudUrl();if(!url){el.textContent='☁ Non connecté';el.className='cloud-badge off';return}if(cloudStatus==='saving'){el.textContent='☁ Synchronisation…';el.className='cloud-badge saving'}else if(cloudStatus==='saved'){el.textContent='☁ Synchronisé';el.className='cloud-badge ok'}else if(cloudStatus==='error'){el.textContent='☁ Erreur sync';el.className='cloud-badge err'}else if(cloudStatus==='loading'){el.textContent='☁ Chargement…';el.className='cloud-badge saving'}else{el.textContent='☁ Connecté';el.className='cloud-badge ok'}}
@@ -206,7 +207,7 @@ function cloudSave(){
     })
     .then(j=>{
       console.log('[GMAO Cloud] Response body:',j);
-      if(j&&j.ok){cloudStatus='saved';state._lastCloudSave=Date.now()}
+      if(j&&j.ok){cloudStatus='saved';state._lastCloudSave=Date.now();_localDirty=false;console.log('[GMAO Cloud] Save confirmed OK — dirty flag cleared')}
       else if(j&&j.error){cloudStatus='error';console.error('[GMAO Cloud] Save error:',j.error)}
       else{cloudStatus='error';console.error('[GMAO Cloud] Unexpected response:',j)}
       updateCloudBadge();
@@ -227,6 +228,7 @@ window.addEventListener('pagehide',()=>{if(cloudSaveTimer){clearTimeout(cloudSav
 function cloudLoad(force){
   const url=getCloudUrl();if(!url)return Promise.resolve(false);
   if(!force&&cloudSaveTimer){console.log('[GMAO Cloud] Load skipped (save pending)');return Promise.resolve(false)}
+  if(_localDirty&&!_blockSaveUntilLoaded){console.log('[GMAO Cloud] Load skipped (local changes not yet saved to cloud)');return Promise.resolve(false)}
   cloudStatus='loading';updateCloudBadge();
   console.log('[GMAO Cloud] Loading from cloud…');
   return fetch(url+'?action=loadAll')
@@ -291,6 +293,7 @@ async function uploadPhotoToCloud(base64DataUrl,fileName){
 
 // ─── Local persistence ───
 function persistState(){
+  _localDirty=true;
   try{const d={};DATA_KEYS.forEach(k=>d[k]=state[k]);localStorage.setItem(LS_KEY,JSON.stringify(d))}catch(e){if(e.name==='QuotaExceededError')alert('Stockage navigateur plein. Certaines photos n\'ont pas pu être sauvegardées. Utilisez « Exporter JSON » pour sauvegarder vos données.')}
   cloudSaveDebounced();
 }
