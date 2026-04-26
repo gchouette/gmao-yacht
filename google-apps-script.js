@@ -161,6 +161,164 @@ function doPost(e) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+// ─── Backup automatique vers Google Drive ───
+
+// ID du dossier Google Drive pour les backups (à configurer ci-dessous)
+// Créez un dossier "GMAO Backups" dans Google Drive et collez son ID ici
+const BACKUP_FOLDER_ID = 'VOTRE_BACKUP_FOLDER_ID';
+
+// Nombre maximum de backups à conserver (les plus anciens sont supprimés)
+const MAX_BACKUPS = 30;
+
+/**
+ * Sauvegarde toutes les données GMAO en fichier JSON dans Google Drive.
+ * Peut être appelée manuellement ou par un trigger automatique.
+ */
+function backupToGoogleDrive() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const data = {};
+
+  // Collecter toutes les données de chaque onglet
+  Object.keys(SCHEMAS).forEach(key => {
+    const sheet = ss.getSheetByName(key);
+    if (sheet) {
+      data[key] = sheetToJson(sheet);
+    } else {
+      data[key] = [];
+    }
+  });
+
+  // Horodatage pour le nom de fichier
+  const now = new Date();
+  const ts = Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy-MM-dd_HH-mm');
+  const fileName = 'GMAO_backup_' + ts + '.json';
+
+  // Sauvegarder dans le dossier Drive
+  const folder = DriveApp.getFolderById(BACKUP_FOLDER_ID);
+  const jsonContent = JSON.stringify(data, null, 2);
+  folder.createFile(fileName, jsonContent, 'application/json');
+
+  // Rotation : supprimer les backups les plus anciens au-delà de MAX_BACKUPS
+  cleanOldBackups_(folder);
+
+  Logger.log('Backup GMAO créé : ' + fileName + ' (' + jsonContent.length + ' octets)');
+  return fileName;
+}
+
+/**
+ * Supprime les backups les plus anciens pour ne garder que MAX_BACKUPS fichiers.
+ */
+function cleanOldBackups_(folder) {
+  const files = folder.getFilesByType('application/json');
+  const backups = [];
+
+  while (files.hasNext()) {
+    const file = files.next();
+    if (file.getName().startsWith('GMAO_backup_')) {
+      backups.push({ file: file, date: file.getDateCreated() });
+    }
+  }
+
+  // Trier du plus récent au plus ancien
+  backups.sort((a, b) => b.date - a.date);
+
+  // Supprimer ceux au-delà de la limite
+  for (let i = MAX_BACKUPS; i < backups.length; i++) {
+    backups[i].file.setTrashed(true);
+    Logger.log('Ancien backup supprimé : ' + backups[i].file.getName());
+  }
+}
+
+/**
+ * Restaure les données depuis un fichier backup JSON.
+ * Utilisation : restoreFromBackup('GMAO_backup_2026-04-25_08-00.json')
+ */
+function restoreFromBackup(fileName) {
+  const folder = DriveApp.getFolderById(BACKUP_FOLDER_ID);
+  const files = folder.getFilesByName(fileName);
+
+  if (!files.hasNext()) {
+    throw new Error('Fichier backup introuvable : ' + fileName);
+  }
+
+  const file = files.next();
+  const data = JSON.parse(file.getBlob().getDataAsString());
+
+  // Écrire chaque onglet
+  Object.keys(SCHEMAS).forEach(key => {
+    if (data[key]) {
+      jsonToSheet(getSheet(key), data[key], SCHEMAS[key]);
+    }
+  });
+
+  SpreadsheetApp.getActiveSpreadsheet().toast(
+    'Données restaurées depuis ' + fileName, 'Restauration', 10
+  );
+  Logger.log('Restauration terminée depuis : ' + fileName);
+}
+
+/**
+ * Liste tous les backups disponibles dans le dossier Drive.
+ * Utile pour choisir quel backup restaurer.
+ */
+function listBackups() {
+  const folder = DriveApp.getFolderById(BACKUP_FOLDER_ID);
+  const files = folder.getFilesByType('application/json');
+  const list = [];
+
+  while (files.hasNext()) {
+    const file = files.next();
+    if (file.getName().startsWith('GMAO_backup_')) {
+      list.push({
+        name: file.getName(),
+        date: file.getDateCreated(),
+        size: file.getSize()
+      });
+    }
+  }
+
+  list.sort((a, b) => b.date - a.date);
+  list.forEach((b, i) => {
+    Logger.log((i + 1) + '. ' + b.name + ' (' + Math.round(b.size / 1024) + ' Ko)');
+  });
+
+  return list;
+}
+
+/**
+ * Installe le trigger de backup journalier automatique.
+ * Exécutez cette fonction UNE SEULE FOIS.
+ */
+function installBackupTrigger() {
+  // Vérifier qu'un trigger n'existe pas déjà
+  const existing = ScriptApp.getProjectTriggers().filter(
+    t => t.getHandlerFunction() === 'backupToGoogleDrive'
+  );
+  if (existing.length > 0) {
+    Logger.log('Trigger backup déjà installé.');
+    return;
+  }
+
+  // Backup tous les jours entre 2h et 3h du matin
+  ScriptApp.newTrigger('backupToGoogleDrive')
+    .timeBased()
+    .everyDays(1)
+    .atHour(2)
+    .create();
+
+  Logger.log('Trigger backup journalier installé (entre 2h et 3h).');
+}
+
+/**
+ * Supprime le trigger de backup automatique.
+ */
+function removeBackupTrigger() {
+  ScriptApp.getProjectTriggers()
+    .filter(t => t.getHandlerFunction() === 'backupToGoogleDrive')
+    .forEach(t => ScriptApp.deleteTrigger(t));
+  Logger.log('Trigger backup supprimé.');
+}
+
 // ─── Initialisation ───
 // Exécutez cette fonction une fois pour créer tous les onglets
 function initSheets() {
