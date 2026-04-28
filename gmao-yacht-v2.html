@@ -366,7 +366,7 @@ const esc=s=>(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&qu
 const fmt=fE;
 const vesselName=nId=>{const v=state.vessels.find(v=>v.id===nId);return v?v.nom:'—'};
 const allowedVessels=()=>{const u=state.currentUser;if(!u)return state.vessels;return state.vessels.filter(v=>u.vesselIds.includes(v.id))};
-function filterByVessel(arr){const vid=state.filterNav?+state.filterNav:null;return vid?arr.filter(i=>i.nId===vid):arr}
+function filterByVessel(arr){const vid=state.filterNav?+state.filterNav:null;if(vid)return arr.filter(i=>i.nId===vid);const u=state.currentUser;if(u&&u.vesselIds){const ids=u.vesselIds;return arr.filter(i=>ids.includes(i.nId))}return arr}
 function makeVesselFilter(){
   const user=state.currentUser;
   if(user&&user.vesselIds.length===1){
@@ -546,13 +546,14 @@ const FAMILLES=['Propulsion','Coque & Structure','Gréement & Voiles','Électric
 function pgDashboard(){
   const sec=S('div',{className:'section'});
   sec.appendChild(S('div',null,S('h1',{style:{fontSize:'22px',fontWeight:700}},'Tableau de bord'),S('p',{style:{fontSize:'12px',color:'#64748b',marginTop:'4px'}},'Vue d\'ensemble — '+fD(new Date().toISOString().split('T')[0]))));
-  const totalC=state.couts.reduce((s,c)=>s+c.montant,0);const totalR=state.revenus.reduce((s,r)=>s+r.montant,0);
-  const retard=state.maint.filter(m=>m.statut==='En retard').length;const prochain=state.maint.filter(m=>m.statut==='Planifiée'&&jR(m.echeance)<=30&&jR(m.echeance)>0).length;
-  const alerteP=state.inventaire.filter(p=>p.qte<=p.seuil).length;const justifManq=state.couts.filter(c=>c.justif==='Manquant').length;
+  const myCouts=filterByVessel(state.couts);const myRevs=filterByVessel(state.revenus);const myMaint=filterByVessel(state.maint);const myInv=filterByVessel(state.inventaire);const myRegl=filterByVessel(state.reglementaire);const myCharters=filterByVessel(state.charters);
+  const totalC=myCouts.reduce((s,c)=>s+c.montant,0);const totalR=myRevs.reduce((s,r)=>s+r.montant,0);
+  const retard=myMaint.filter(m=>m.statut==='En retard').length;const prochain=myMaint.filter(m=>m.statut==='Planifiée'&&jR(m.echeance)<=30&&jR(m.echeance)>0).length;
+  const alerteP=myInv.filter(p=>p.qte<=p.seuil).length;const justifManq=myCouts.filter(c=>c.justif==='Manquant').length;
   const stats=S('div',{className:'stats'});
-  const reglNonConf=state.reglementaire.filter(r=>r.statut==='Non conforme'||(r.echeance&&r.echeance<today())).length;
-  const reglTotal=state.reglementaire.length;
-  const apaAlerts=[];state.charters.filter(ch=>ch.statut==='Confirmé'&&ch.apa>0).forEach(ch=>{const spent=state.apaDep.filter(d=>d.charterId===ch.id).reduce((s,d)=>s+d.montant,0);const pct=Math.round(spent/ch.apa*100);if(pct>=80)apaAlerts.push(pct)});
+  const reglNonConf=myRegl.filter(r=>r.statut==='Non conforme'||(r.echeance&&r.echeance<today())).length;
+  const reglTotal=myRegl.length;
+  const apaAlerts=[];myCharters.filter(ch=>ch.statut==='Confirmé'&&ch.apa>0).forEach(ch=>{const spent=state.apaDep.filter(d=>d.charterId===ch.id).reduce((s,d)=>s+d.montant,0);const pct=Math.round(spent/ch.apa*100);if(pct>=80)apaAlerts.push(pct)});
   [{ic:'shield',lb:'Réglementaire',val:reglNonConf?reglNonConf+' alerte'+(reglNonConf>1?'s':''):'Conforme',sub:reglTotal+' documents suivis',bg:reglNonConf?'#fee2e2':'#d1fae5',fg:reglNonConf?'#dc2626':'#059669',pg:'reglementaire'},
    {ic:'alert',lb:'Maintenance',val:retard+' en retard',sub:prochain+' dans 30j',bg:'#fee2e2',fg:'#dc2626',pg:'maintenance'},
    {ic:'anchor',lb:'APA Charter',val:apaAlerts.length?apaAlerts.length+' charter'+(apaAlerts.length>1?'s':'')+' > 80%':'APA OK',sub:state.charters.filter(ch=>ch.statut==='Confirmé').length+' charter(s) actif(s)',bg:apaAlerts.length?'#ffedd5':'#d1fae5',fg:apaAlerts.length?'#ea580c':'#059669',pg:'charter'},
@@ -562,15 +563,15 @@ function pgDashboard(){
   // Charts
   const row=S('div',{className:'g3'});
   // Pie
-  const catMap={};state.couts.forEach(c=>{catMap[c.cat]=(catMap[c.cat]||0)+c.montant});
+  const catMap={};myCouts.forEach(c=>{catMap[c.cat]=(catMap[c.cat]||0)+c.montant});
   const pieData=Object.entries(catMap).map(([name,value])=>({name,value}));
   const pieCard=S('div',{className:'card',style:{padding:'16px'}});pieCard.appendChild(S('h3',{style:{fontSize:'14px',fontWeight:600,marginBottom:'12px'}},'Répartition coûts'));pieCard.appendChild(makePie(pieData));row.appendChild(pieCard);
   // Bar
-  const barData=allowedVessels().map(v=>({name:v.nom,value:state.couts.filter(c=>c.nId===v.id).reduce((s,c)=>s+c.montant,0)}));
+  const barData=allowedVessels().map(v=>({name:v.nom,value:myCouts.filter(c=>c.nId===v.id).reduce((s,c)=>s+c.montant,0)}));
   const barCard=S('div',{className:'card',style:{padding:'16px'}});barCard.appendChild(S('h3',{style:{fontSize:'14px',fontWeight:600,marginBottom:'12px'}},'Coûts par navire'));barCard.appendChild(makeBar(barData,()=>'#0ea5e9'));row.appendChild(barCard);
   // Rentabilité
   const rentCard=S('div',{className:'card',style:{padding:'16px'}});rentCard.appendChild(S('h3',{style:{fontSize:'14px',fontWeight:600,marginBottom:'12px'}},'Rentabilité par navire'));
-  const rentData=allowedVessels().map(v=>{const dep=state.couts.filter(c=>c.nId===v.id).reduce((s,c)=>s+c.montant,0);const rev=state.revenus.filter(r=>r.nId===v.id).reduce((s,r)=>s+r.montant,0);return{name:v.nom,dep,rev,profit:rev-dep}});
+  const rentData=allowedVessels().map(v=>{const dep=myCouts.filter(c=>c.nId===v.id).reduce((s,c)=>s+c.montant,0);const rev=myRevs.filter(r=>r.nId===v.id).reduce((s,r)=>s+r.montant,0);return{name:v.nom,dep,rev,profit:rev-dep}});
   // Table-style layout
   const tbl=S('div',{style:{display:'grid',gridTemplateColumns:'1fr auto auto auto',gap:'0',fontSize:'12px'}});
   // Header
@@ -588,7 +589,7 @@ function pgDashboard(){
   sec.appendChild(row);
   // Upcoming tasks
   const taskCard=S('div',{className:'card',style:{padding:'16px'}});taskCard.appendChild(S('h3',{style:{fontSize:'14px',fontWeight:600,marginBottom:'12px'}},'Prochaines interventions'));
-  state.maint.filter(m=>m.statut!=='Réalisée'&&m.statut!=='Validée').sort((a,b)=>new Date(a.echeance)-new Date(b.echeance)).slice(0,6).forEach(t=>{
+  myMaint.filter(m=>m.statut!=='Réalisée'&&m.statut!=='Validée').sort((a,b)=>new Date(a.echeance)-new Date(b.echeance)).slice(0,6).forEach(t=>{
     const v=gv(t.nId);const j=jR(t.echeance);const crew=ge(t.assigneA);
     const bc=t.statut==='En retard'?'red':j<=7?'orange':j<=30?'yellow':'blue';
     taskCard.appendChild(S('div',{style:{display:'flex',alignItems:'center',gap:'8px',padding:'8px',borderRadius:'8px',background:'#f8fafc',marginBottom:'6px',cursor:'pointer',fontSize:'12px'},onClick:()=>setState({page:'maintenance'})},
@@ -733,7 +734,7 @@ function pgFlotte(){
 function pgComposants(){
   const sec=S('div',{className:'section'});
   sec.appendChild(S('div',{className:'flex-b'},S('div',null,S('h1',{style:{fontSize:'22px',fontWeight:700}},'Composants & Carnet d\'entretien'),S('p',{style:{fontSize:'12px',color:'#64748b',marginTop:'2px'}},state.composants.length+' composants enregistrés')),
-    S('button',{className:'btn btn-p',onClick:()=>openModal('addComp',{nId:state.vessels[0]?.id,famille:'',sg:'',nom:'',marque:'',modele:'',serie:'',install:'',manuel:''})},icon('plus',14),' Composant')
+    S('button',{className:'btn btn-p',onClick:()=>openModal('addComp',{nId:allowedVessels()[0]?.id,famille:'',sg:'',nom:'',marque:'',modele:'',serie:'',install:'',manuel:''})},icon('plus',14),' Composant')
   ));
   // Filter
   const ns=S('select',{className:'sel',style:{width:'auto'},onChange:e=>setState({filterNav:e.target.value})});ns.appendChild(S('option',{value:''},'Tous les navires'));allowedVessels().forEach(v=>{const o=S('option',{value:v.id},v.nom);if(String(v.id)===state.filterNav)o.selected=true;ns.appendChild(o)});sec.appendChild(ns);
@@ -855,7 +856,7 @@ function pgMaint(){
     S('h2',{},'🔧 Maintenance'),
     S('div',{style:{display:'flex',gap:'8px',alignItems:'center'}},
       makeVesselFilter(),
-      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addMaint',{nId:state.vessels[0]?.id||1,titre:'',desc:'',cat:'Préventive',prio:'Normale',statut:'Planifiée',echeance:'',dateRealisation:'',compId:'',assigneA:'',justif:'En attente',workflow:[],cout:0,photos:[],recurrence:'aucune',checklist:[],factures:[],parentId:null})},icon('plus',14),' Nouvelle intervention')
+      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addMaint',{nId:allowedVessels()[0]?.id||1,titre:'',desc:'',cat:'Préventive',prio:'Normale',statut:'Planifiée',echeance:'',dateRealisation:'',compId:'',assigneA:'',justif:'En attente',workflow:[],cout:0,photos:[],recurrence:'aucune',checklist:[],factures:[],parentId:null})},icon('plus',14),' Nouvelle intervention')
     )
   ));
   // Stats
@@ -1162,7 +1163,7 @@ function pgCouts(){
     S('h2',{},'💰 Suivi des coûts'),
     S('div',{style:{display:'flex',gap:'8px',alignItems:'center'}},
       makeVesselFilter(),
-      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addCout',{nId:state.vessels[0]?.id||1,desc:'',cat:'Maintenance',montant:0,date:'',fournisseur:'',justif:'En attente',photos:[],datePaiement:'',statutPaiement:'En attente'})},icon('plus',14),' Ajouter')
+      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addCout',{nId:allowedVessels()[0]?.id||1,desc:'',cat:'Maintenance',montant:0,date:'',fournisseur:'',justif:'En attente',photos:[],datePaiement:'',statutPaiement:'En attente'})},icon('plus',14),' Ajouter')
     )
   ));
   const fc=filterByVessel(state.couts);
@@ -1331,7 +1332,7 @@ function pgCharter(){
     S('h2',{},'⛵ Charter & APA'),
     S('div',{style:{display:'flex',gap:'8px'}},
       makeVesselFilter(),
-      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addCharter',{nId:state.vessels[0]?.id||1,client:'',debut:'',fin:'',montant:0,apa:0,statut:'Confirmé',brokers:[],cruisingArea:'',miseADispo:[]})},icon('plus',14),' Nouveau charter')
+      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addCharter',{nId:allowedVessels()[0]?.id||1,client:'',debut:'',fin:'',montant:0,apa:0,statut:'Confirmé',brokers:[],cruisingArea:'',miseADispo:[]})},icon('plus',14),' Nouveau charter')
     )
   ));
   const fch=filterByVessel(state.charters);
@@ -1547,7 +1548,7 @@ function pgCompta(){
     S('h2',{},'📊 Comptabilité'),
     S('div',{style:{display:'flex',gap:'8px',alignItems:'center',flexWrap:'wrap'}},
       makeVesselFilter(),
-      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addRevenu',{nId:state.vessels[0]?.id||1,desc:'',type:'Charter',montant:0,date:'',datePaiement:'',statutPaiement:'En attente'})},icon('plus',14),' Ajouter revenu'),
+      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addRevenu',{nId:allowedVessels()[0]?.id||1,desc:'',type:'Charter',montant:0,date:'',datePaiement:'',statutPaiement:'En attente'})},icon('plus',14),' Ajouter revenu'),
       S('button',{className:'btn btn-s btn-sm',onClick:()=>openModal('extractCompta',{month:state.comptaMois||new Date().toISOString().slice(0,7)})},icon('download',14),' Extraction mensuelle')
     )
   ));
@@ -1798,7 +1799,7 @@ function pgInventaire(){
     S('h2',{},'📦 Inventaire pièces'),
     S('div',{style:{display:'flex',gap:'8px'}},
       makeVesselFilter(),
-      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addInv',{nId:state.vessels[0]?.id||1,nom:'',ref:'',cat:'Mécanique',qte:0,seuil:1,emplacement:'',fournisseur:'',photos:[]})},icon('plus',14),' Ajouter')
+      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addInv',{nId:allowedVessels()[0]?.id||1,nom:'',ref:'',cat:'Mécanique',qte:0,seuil:1,emplacement:'',fournisseur:'',photos:[]})},icon('plus',14),' Ajouter')
     )
   ));
   const fi=filterByVessel(state.inventaire);
@@ -1866,7 +1867,7 @@ function pgJournal(){
     S('h2',{},'📝 Journal de bord'),
     S('div',{style:{display:'flex',gap:'8px'}},
       makeVesselFilter(),
-      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addLog',{nId:state.vessels[0]?.id||1,date:today(),type:'Navigation',texte:'',auteur:'',photos:[]})},icon('plus',14),' Nouvelle entrée')
+      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addLog',{nId:allowedVessels()[0]?.id||1,date:today(),type:'Navigation',texte:'',auteur:'',photos:[]})},icon('plus',14),' Nouvelle entrée')
     )
   ));
   const fl=filterByVessel(state.journal);
@@ -1941,7 +1942,7 @@ function pgDocuments(){
     S('h2',{},'📁 Documents'),
     S('div',{style:{display:'flex',gap:'8px'}},
       makeVesselFilter(),
-      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addDoc',{nId:state.vessels[0]?.id||1,nom:'',cat:'Certificat',echeance:'',statut:'Valide',notes:''})},icon('plus',14),' Ajouter')
+      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addDoc',{nId:allowedVessels()[0]?.id||1,nom:'',cat:'Certificat',echeance:'',statut:'Valide',notes:''})},icon('plus',14),' Ajouter')
     )
   ));
   const fd=filterByVessel(state.documents);
@@ -2021,7 +2022,7 @@ function pgReglementaire(){
     S('h2',{},'🛡️ Réglementaire'),
     S('div',{style:{display:'flex',gap:'8px'}},
       makeVesselFilter(),
-      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addRegl',{nId:state.vessels[0]?.id||1,nom:'',cat:'Sécurité',eauxFr:true,eauxEtr:false,echeance:'',statut:'Conforme',notes:''})},icon('plus',14),' Ajouter')
+      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addRegl',{nId:allowedVessels()[0]?.id||1,nom:'',cat:'Sécurité',eauxFr:true,eauxEtr:false,echeance:'',statut:'Conforme',notes:''})},icon('plus',14),' Ajouter')
     )
   ));
   const fr=filterByVessel(state.reglementaire);

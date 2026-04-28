@@ -1,6 +1,6 @@
 // GMAO Yacht — Service Worker (PWA offline support)
 // Change CACHE_VERSION when you update files to force a refresh
-const CACHE_VERSION = 'gmao-yacht-v5';
+const CACHE_VERSION = 'gmao-yacht-v6';
 const ASSETS = [
   './',
   './gmao-yacht-v2.html',
