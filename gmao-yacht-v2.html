@@ -450,12 +450,31 @@ function photoUpload(photos,onAdd,onRemove){
   grid.appendChild(zone);
   return grid;
 }
+function drivePreviewUrl(src){
+  const m=src.match(/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/)||src.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  return m?'https://drive.google.com/file/d/'+m[1]+'/preview':src;
+}
+function driveViewUrl(src){
+  const m=src.match(/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/)||src.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  return m?'https://drive.google.com/file/d/'+m[1]+'/view':src;
+}
 function showLightbox(src){
   const lb=S('div',{className:'photo-lightbox',onClick:()=>lb.remove()});
   const closeBtn=S('button',{className:'photo-lightbox-close',onClick:()=>lb.remove()});
   closeBtn.textContent='×';
   lb.appendChild(closeBtn);
-  lb.appendChild(S('img',{src:src,onClick:e=>e.stopPropagation()}));
+  // Detect Google Drive files and use preview iframe for PDFs/docs
+  const driveMatch=src.match(/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/)||src.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if(driveMatch){
+    const fileId=driveMatch[1];
+    const iframe=S('iframe',{src:'https://drive.google.com/file/d/'+fileId+'/preview',style:{width:'90vw',height:'85vh',border:'none',borderRadius:'8px',background:'#fff'},onClick:e=>e.stopPropagation()});
+    lb.appendChild(iframe);
+  }else if(src.startsWith('data:application/pdf')||src.toLowerCase().endsWith('.pdf')){
+    const iframe=S('iframe',{src:src,style:{width:'90vw',height:'85vh',border:'none',borderRadius:'8px',background:'#fff'},onClick:e=>e.stopPropagation()});
+    lb.appendChild(iframe);
+  }else{
+    lb.appendChild(S('img',{src:src,onClick:e=>e.stopPropagation()}));
+  }
   document.body.appendChild(lb);
 }
 function photoGallery(photos){
@@ -1079,7 +1098,7 @@ function pgMaint(){
         // File upload for devis
         const fileRow=S('div',{style:{display:'flex',gap:'4px',alignItems:'center'}});
         if(fi.fichier){
-          fileRow.appendChild(S('a',{href:fi.fichier,target:'_blank',download:fi.fichierNom||'devis',style:{fontSize:'11px',color:'#2563eb',textDecoration:'underline'}},fi.fichierNom||'Pièce jointe'));
+          fileRow.appendChild(S('a',{href:driveViewUrl(fi.fichier),target:'_blank',style:{fontSize:'11px',color:'#2563eb',textDecoration:'underline'}},fi.fichierNom||'Pièce jointe'));
           fileRow.appendChild(S('button',{className:'icon-btn danger',style:{padding:'2px'},onClick:()=>setState(s=>({edit:{...s.edit,factures:[...s.edit.factures.slice(0,i),{...fi,fichier:'',fichierNom:''},...s.edit.factures.slice(i+1)]}}))},icon('x',12)));
         } else {
           const fileInp=S('input',{type:'file',accept:'image/*,.pdf,.doc,.docx,.xls,.xlsx',style:{fontSize:'11px',flex:1}});
@@ -1972,7 +1991,7 @@ function pgDocuments(){
     tr.appendChild(S('td',{style:isExp?{color:'#ef4444',fontWeight:600}:{}},d.echeance?fD(d.echeance):'—'));
     const sCls=d.statut==='Valide'?'tag-ok':d.statut==='Archivé'?'':'tag-warn';
     tr.appendChild(S('td',{},S('span',{className:'tag '+sCls},d.statut)));
-    tr.appendChild(S('td',{},d.fichier?S('a',{href:d.fichier,target:'_blank',style:{color:'#2563eb',fontSize:'11px'}},icon('file',12),' '+(d.fichierNom||'Ouvrir')):'—'));
+    tr.appendChild(S('td',{},d.fichier?S('a',{href:driveViewUrl(d.fichier),target:'_blank',style:{color:'#2563eb',fontSize:'11px'}},icon('file',12),' '+(d.fichierNom||'Ouvrir')):'—'));
     tr.appendChild(S('td',{style:{fontSize:'11px'}},d.notes||'-'));
     const acts=S('td',{});
     acts.appendChild(S('button',{className:'icon-btn',onClick:()=>openModal('editDoc',{...d})},icon('edit',14)));
@@ -2054,7 +2073,7 @@ function pgReglementaire(){
     tr.appendChild(S('td',{},r.echeance?fD(r.echeance):'—'));
     const sCls=r.statut==='Conforme'?'tag-ok':r.statut==='Non conforme'?'tag-warn':'tag-pending';
     tr.appendChild(S('td',{},S('span',{className:'tag '+sCls},r.statut)));
-    tr.appendChild(S('td',{},r.fichier?S('a',{href:r.fichier,target:'_blank',style:{color:'#2563eb',fontSize:'11px'}},icon('file',12),' '+(r.fichierNom||'Ouvrir')):'—'));
+    tr.appendChild(S('td',{},r.fichier?S('a',{href:driveViewUrl(r.fichier),target:'_blank',style:{color:'#2563eb',fontSize:'11px'}},icon('file',12),' '+(r.fichierNom||'Ouvrir')):'—'));
     tr.appendChild(S('td',{style:{fontSize:'11px'}},r.notes||'-'));
     const acts=S('td',{});
     acts.appendChild(S('button',{className:'icon-btn',onClick:()=>openModal('editRegl',{...r})},icon('edit',14)));
