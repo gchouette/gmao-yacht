@@ -1355,7 +1355,7 @@ function pgCharter(){
     S('h2',{},'⛵ Charter & APA'),
     S('div',{style:{display:'flex',gap:'8px'}},
       makeVesselFilter(),
-      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addCharter',{nId:allowedVessels()[0]?.id||1,client:'',debut:'',fin:'',montant:0,apa:0,statut:'Confirmé',brokers:[],cruisingArea:'',miseADispo:[]})},icon('plus',14),' Nouveau charter')
+      S('button',{className:'btn btn-p btn-sm',onClick:()=>openModal('addCharter',{nId:allowedVessels()[0]?.id||1,client:'',debut:'',fin:'',montant:0,apa:0,statut:'Confirmé',brokers:[],cruisingArea:'',miseADispo:[],fichier:'',fichierNom:''})},icon('plus',14),' Nouveau charter')
     )
   ));
   const fch=filterByVessel(state.charters);
@@ -1426,6 +1426,13 @@ function pgCharter(){
     }
     madSec.appendChild(S('button',{className:'btn btn-g btn-sm',style:{marginTop:'8px',width:'100%'},onClick:()=>openModal('addMAD',{charterId:ch.id,desc:'',montant:0})},icon('plus',12),' Ajouter mise à disposition'));
     card.appendChild(madSec);
+    // Document lié au charter
+    if(ch.fichier){
+      const docSec=S('div',{style:{margin:'0 18px 12px',padding:'10px 16px',background:'#eff6ff',borderRadius:'8px',display:'flex',alignItems:'center',gap:'10px'}});
+      docSec.appendChild(S('span',{style:{fontSize:'12px',color:'#1e40af',fontWeight:600}},'📄 Document :'));
+      docSec.appendChild(S('a',{href:driveViewUrl(ch.fichier),target:'_blank',style:{fontSize:'12px',color:'#2563eb',textDecoration:'underline'}},ch.fichierNom||'Ouvrir le document'));
+      card.appendChild(docSec);
+    }
     // APA expenses
     const chDeps=state.apaDep.filter(d=>d.charterId===ch.id);
     if(chDeps.length){
@@ -1489,6 +1496,27 @@ function pgCharter(){
       }
       bkSec.appendChild(S('button',{className:'btn btn-s btn-sm',style:{marginTop:'8px'},onClick:()=>setState(s=>({edit:{...s.edit,brokers:[...(s.edit.brokers||[]),{nom:'',commission:0}]}}))},icon('plus',12),' Ajouter courtier'));
       f.appendChild(bkSec);
+      // Document charter (contrat, etc.)
+      const chFileSec=S('div',{className:'form-full'});
+      chFileSec.appendChild(S('label',{className:'form-label'},'📄 Document (contrat, avenant…)'));
+      if(ed.fichier){
+        chFileSec.appendChild(S('div',{style:{display:'flex',alignItems:'center',gap:'8px',fontSize:'12px'}},S('a',{href:driveViewUrl(ed.fichier),target:'_blank',style:{color:'#2563eb'}},ed.fichierNom||'Document joint'),S('button',{className:'btn btn-d btn-sm',onClick:()=>setState(s=>({edit:{...s.edit,fichier:'',fichierNom:''}}))},icon('trash',12),' Supprimer')));
+      }else{
+        const chFZone=S('div',{className:'photo-upload-zone',style:{width:'100%',height:'48px',flexDirection:'row',gap:'6px'}});
+        chFZone.appendChild(icon('upload',14));chFZone.appendChild(S('span',{style:{fontSize:'11px'}},'Cliquer pour ajouter un document'));
+        const chFInp=S('input',{type:'file',style:{display:'none'}});
+        chFInp.addEventListener('change',ev=>{const file=ev.target.files[0];if(!file||file.size>10*1024*1024){alert('Fichier trop volumineux (max 10 Mo)');return}
+          showUploadToast('Chargement de '+file.name+'…');
+          const r=new FileReader();r.onload=async re=>{
+            chFZone.innerHTML='';chFZone.appendChild(S('span',{style:{fontSize:'11px',color:'#64748b'}},'Upload en cours…'));
+            const driveUrl=await uploadPhotoToCloud(re.target.result,file.name);
+            hideUploadToast();
+            setState(s=>({edit:{...s.edit,fichier:driveUrl,fichierNom:file.name}}));
+          };r.readAsDataURL(file);});
+        chFZone.addEventListener('click',()=>chFInp.click());chFZone.appendChild(chFInp);
+        chFileSec.appendChild(chFZone);
+      }
+      f.appendChild(chFileSec);
       f.appendChild(makeSelect('Statut',['Confirmé','Option','Annulé','Terminé'],ed.statut,e=>setState(s=>({edit:{...s.edit,statut:e.target.value}}))));
       const btns=S('div',{className:'form-full',style:{display:'flex',justifyContent:'flex-end',gap:'8px',marginTop:'8px'}});
       btns.appendChild(S('button',{className:'btn btn-s',onClick:closeModal},'Annuler'));
@@ -2001,42 +2029,50 @@ function pgDocuments(){
   tbl.appendChild(tbody);sec.appendChild(tbl);
 
   // ─── Aggregated files from all sections ───
+  const safeArr=v=>Array.isArray(v)?v:[];
   const allFiles=[];
-  // Composants: photos[] + manuel
+  // Composants: photos[]
   filterByVessel(state.composants).forEach(c=>{
-    (c.photos||[]).forEach(src=>allFiles.push({src,nom:c.nom,source:'Composant',sourceIcon:'⚙️',nId:c.nId}));
+    safeArr(c.photos).forEach(src=>{if(src)allFiles.push({src,nom:c.nom,source:'Composant',sourceIcon:'⚙️',nId:c.nId})});
   });
   // Maintenance: photos[] + factures[].fichier
   filterByVessel(state.maint).forEach(m=>{
-    (m.photos||[]).forEach(src=>allFiles.push({src,nom:m.titre,source:'Maintenance',sourceIcon:'🔧',nId:m.nId}));
-    (m.factures||[]).forEach(f=>{if(f.fichier)allFiles.push({src:f.fichier,nom:(f.fichierNom||f.nom||'Devis')+' — '+m.titre,source:'Maintenance (devis)',sourceIcon:'🧾',nId:m.nId});});
+    safeArr(m.photos).forEach(src=>{if(src)allFiles.push({src,nom:m.titre,source:'Maintenance',sourceIcon:'🔧',nId:m.nId})});
+    safeArr(m.factures).forEach(fc=>{if(fc&&fc.fichier)allFiles.push({src:fc.fichier,nom:(fc.fichierNom||fc.nom||'Devis')+' — '+m.titre,source:'Maintenance (devis)',sourceIcon:'🧾',nId:m.nId})});
   });
   // Coûts: photos[]
   filterByVessel(state.couts).forEach(c=>{
-    (c.photos||[]).forEach(src=>allFiles.push({src,nom:c.desc,source:'Coût / Justificatif',sourceIcon:'💰',nId:c.nId}));
+    safeArr(c.photos).forEach(src=>{if(src)allFiles.push({src,nom:c.desc,source:'Coût / Justificatif',sourceIcon:'💰',nId:c.nId})});
   });
   // Inventaire: photos[]
   filterByVessel(state.inventaire).forEach(inv=>{
-    (inv.photos||[]).forEach(src=>allFiles.push({src,nom:inv.nom,source:'Inventaire',sourceIcon:'📦',nId:inv.nId}));
+    safeArr(inv.photos).forEach(src=>{if(src)allFiles.push({src,nom:inv.nom,source:'Inventaire',sourceIcon:'📦',nId:inv.nId})});
   });
   // Journal: photos[]
   filterByVessel(state.journal).forEach(l=>{
-    (l.photos||[]).forEach(src=>allFiles.push({src,nom:(l.type||'Entrée')+' — '+fD(l.date),source:'Journal de bord',sourceIcon:'📖',nId:l.nId}));
+    safeArr(l.photos).forEach(src=>{if(src)allFiles.push({src,nom:(l.type||'Entrée')+' — '+fD(l.date),source:'Journal de bord',sourceIcon:'📖',nId:l.nId})});
   });
   // Réglementaire: fichier
   filterByVessel(state.reglementaire).forEach(r=>{
     if(r.fichier)allFiles.push({src:r.fichier,nom:(r.fichierNom||r.nom),source:'Réglementaire',sourceIcon:'🛡️',nId:r.nId});
   });
+  // Charters: fichier (contrat)
+  filterByVessel(state.charters).forEach(ch=>{
+    if(ch.fichier)allFiles.push({src:ch.fichier,nom:(ch.fichierNom||'Contrat')+' — '+ch.client,source:'Charter',sourceIcon:'⛵',nId:ch.nId});
+  });
 
-  if(allFiles.length){
-    const agSec=S('div',{style:{marginTop:'24px'}});
-    const agHead=S('div',{style:{display:'flex',alignItems:'center',gap:'10px',marginBottom:'12px',cursor:'pointer'},onClick:()=>{const body=agSec.querySelector('.agg-body');const arrow=agSec.querySelector('.agg-arrow');if(body.style.display==='none'){body.style.display='';arrow.textContent='▼'}else{body.style.display='none';arrow.textContent='▶'}}});
-    agHead.appendChild(S('span',{className:'agg-arrow',style:{fontSize:'12px',color:'#64748b'}},'▼'));
-    agHead.appendChild(S('h3',{style:{margin:0,fontSize:'15px',fontWeight:600}},'📂 Tous les fichiers des autres sections'));
-    agHead.appendChild(S('span',{className:'tag',style:{background:'#e0e7ff',color:'#3730a3',fontSize:'11px'}},allFiles.length+' fichier(s)'));
-    agSec.appendChild(agHead);
+  // Section toujours visible
+  const agSec=S('div',{style:{marginTop:'24px',borderTop:'1px solid #e2e8f0',paddingTop:'16px'}});
+  const agHead=S('div',{style:{display:'flex',alignItems:'center',gap:'10px',marginBottom:'12px',cursor:'pointer'},onClick:()=>{const body=agSec.querySelector('.agg-body');const arrow=agSec.querySelector('.agg-arrow');if(body.style.display==='none'){body.style.display='';arrow.textContent='▼'}else{body.style.display='none';arrow.textContent='▶'}}});
+  agHead.appendChild(S('span',{className:'agg-arrow',style:{fontSize:'12px',color:'#64748b'}},'▼'));
+  agHead.appendChild(S('h3',{style:{margin:0,fontSize:'15px',fontWeight:600}},'📂 Tous les fichiers des autres sections'));
+  agHead.appendChild(S('span',{className:'tag',style:{background:'#e0e7ff',color:'#3730a3',fontSize:'11px'}},allFiles.length+' fichier(s)'));
+  agSec.appendChild(agHead);
 
-    const agBody=S('div',{className:'agg-body'});
+  const agBody=S('div',{className:'agg-body'});
+  if(!allFiles.length){
+    agBody.appendChild(S('p',{style:{color:'#94a3b8',fontSize:'13px'}},'Aucun fichier ou photo trouvé dans les autres sections (Composants, Maintenance, Coûts, Inventaire, Journal, Réglementaire).'));
+  }else{
     const agTbl=S('table',{});const agThead=S('thead',{});const agHr=S('tr',{});
     ['Navire','Fichier / Photo','Source','Élément associé','Ouvrir'].forEach(h=>agHr.appendChild(S('th',{},h)));
     agThead.appendChild(agHr);agTbl.appendChild(agThead);
@@ -2044,10 +2080,8 @@ function pgDocuments(){
     allFiles.forEach(af=>{
       const tr=S('tr',{});
       tr.appendChild(S('td',{},vesselName(af.nId)));
-      // Detect if it's a photo (data:image or lh3 thumbnail) vs document
       const isDriveFile=af.src.includes('lh3.googleusercontent.com')||af.src.includes('drive.google.com');
-      const isImg=af.src.startsWith('data:image')||(isDriveFile&&!af.nom.toLowerCase().match(/\.(pdf|doc|docx|xls|xlsx)$/));
-      if(isImg&&af.src.startsWith('data:image')){
+      if(af.src.startsWith('data:image')){
         const thumb=S('img',{src:af.src,style:{width:'40px',height:'40px',objectFit:'cover',borderRadius:'4px',cursor:'pointer'},onClick:()=>showLightbox(af.src)});
         tr.appendChild(S('td',{},thumb));
       }else{
@@ -2067,9 +2101,9 @@ function pgDocuments(){
       agTbody.appendChild(tr);
     });
     agTbl.appendChild(agTbody);agBody.appendChild(agTbl);
-    agSec.appendChild(agBody);
-    sec.appendChild(agSec);
   }
+  agSec.appendChild(agBody);
+  sec.appendChild(agSec);
 
   // Modal
   if(state.modal==='addDoc'||state.modal==='editDoc'){
