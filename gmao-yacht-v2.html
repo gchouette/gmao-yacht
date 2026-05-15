@@ -1999,6 +1999,78 @@ function pgDocuments(){
     tr.appendChild(acts);tbody.appendChild(tr);
   });
   tbl.appendChild(tbody);sec.appendChild(tbl);
+
+  // ─── Aggregated files from all sections ───
+  const allFiles=[];
+  // Composants: photos[] + manuel
+  filterByVessel(state.composants).forEach(c=>{
+    (c.photos||[]).forEach(src=>allFiles.push({src,nom:c.nom,source:'Composant',sourceIcon:'⚙️',nId:c.nId}));
+  });
+  // Maintenance: photos[] + factures[].fichier
+  filterByVessel(state.maint).forEach(m=>{
+    (m.photos||[]).forEach(src=>allFiles.push({src,nom:m.titre,source:'Maintenance',sourceIcon:'🔧',nId:m.nId}));
+    (m.factures||[]).forEach(f=>{if(f.fichier)allFiles.push({src:f.fichier,nom:(f.fichierNom||f.nom||'Devis')+' — '+m.titre,source:'Maintenance (devis)',sourceIcon:'🧾',nId:m.nId});});
+  });
+  // Coûts: photos[]
+  filterByVessel(state.couts).forEach(c=>{
+    (c.photos||[]).forEach(src=>allFiles.push({src,nom:c.desc,source:'Coût / Justificatif',sourceIcon:'💰',nId:c.nId}));
+  });
+  // Inventaire: photos[]
+  filterByVessel(state.inventaire).forEach(inv=>{
+    (inv.photos||[]).forEach(src=>allFiles.push({src,nom:inv.nom,source:'Inventaire',sourceIcon:'📦',nId:inv.nId}));
+  });
+  // Journal: photos[]
+  filterByVessel(state.journal).forEach(l=>{
+    (l.photos||[]).forEach(src=>allFiles.push({src,nom:(l.type||'Entrée')+' — '+fD(l.date),source:'Journal de bord',sourceIcon:'📖',nId:l.nId}));
+  });
+  // Réglementaire: fichier
+  filterByVessel(state.reglementaire).forEach(r=>{
+    if(r.fichier)allFiles.push({src:r.fichier,nom:(r.fichierNom||r.nom),source:'Réglementaire',sourceIcon:'🛡️',nId:r.nId});
+  });
+
+  if(allFiles.length){
+    const agSec=S('div',{style:{marginTop:'24px'}});
+    const agHead=S('div',{style:{display:'flex',alignItems:'center',gap:'10px',marginBottom:'12px',cursor:'pointer'},onClick:()=>{const body=agSec.querySelector('.agg-body');const arrow=agSec.querySelector('.agg-arrow');if(body.style.display==='none'){body.style.display='';arrow.textContent='▼'}else{body.style.display='none';arrow.textContent='▶'}}});
+    agHead.appendChild(S('span',{className:'agg-arrow',style:{fontSize:'12px',color:'#64748b'}},'▼'));
+    agHead.appendChild(S('h3',{style:{margin:0,fontSize:'15px',fontWeight:600}},'📂 Tous les fichiers des autres sections'));
+    agHead.appendChild(S('span',{className:'tag',style:{background:'#e0e7ff',color:'#3730a3',fontSize:'11px'}},allFiles.length+' fichier(s)'));
+    agSec.appendChild(agHead);
+
+    const agBody=S('div',{className:'agg-body'});
+    const agTbl=S('table',{});const agThead=S('thead',{});const agHr=S('tr',{});
+    ['Navire','Fichier / Photo','Source','Élément associé','Ouvrir'].forEach(h=>agHr.appendChild(S('th',{},h)));
+    agThead.appendChild(agHr);agTbl.appendChild(agThead);
+    const agTbody=S('tbody',{});
+    allFiles.forEach(af=>{
+      const tr=S('tr',{});
+      tr.appendChild(S('td',{},vesselName(af.nId)));
+      // Detect if it's a photo (data:image or lh3 thumbnail) vs document
+      const isDriveFile=af.src.includes('lh3.googleusercontent.com')||af.src.includes('drive.google.com');
+      const isImg=af.src.startsWith('data:image')||(isDriveFile&&!af.nom.toLowerCase().match(/\.(pdf|doc|docx|xls|xlsx)$/));
+      if(isImg&&af.src.startsWith('data:image')){
+        const thumb=S('img',{src:af.src,style:{width:'40px',height:'40px',objectFit:'cover',borderRadius:'4px',cursor:'pointer'},onClick:()=>showLightbox(af.src)});
+        tr.appendChild(S('td',{},thumb));
+      }else{
+        tr.appendChild(S('td',{style:{fontSize:'11px'}},af.nom||'Fichier'));
+      }
+      tr.appendChild(S('td',{},S('span',{style:{fontSize:'12px'}},af.sourceIcon+' '+af.source)));
+      tr.appendChild(S('td',{style:{fontSize:'12px',maxWidth:'200px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},af.nom||'—'));
+      const linkTd=S('td',{});
+      if(isDriveFile){
+        linkTd.appendChild(S('a',{href:driveViewUrl(af.src),target:'_blank',style:{color:'#2563eb',fontSize:'11px'}},icon('file',12),' Ouvrir'));
+      }else if(af.src.startsWith('data:')){
+        linkTd.appendChild(S('button',{className:'icon-btn',style:{fontSize:'11px',color:'#2563eb'},onClick:()=>showLightbox(af.src)},icon('eye',12),' Voir'));
+      }else{
+        linkTd.appendChild(S('a',{href:af.src,target:'_blank',style:{color:'#2563eb',fontSize:'11px'}},icon('file',12),' Ouvrir'));
+      }
+      tr.appendChild(linkTd);
+      agTbody.appendChild(tr);
+    });
+    agTbl.appendChild(agTbody);agBody.appendChild(agTbl);
+    agSec.appendChild(agBody);
+    sec.appendChild(agSec);
+  }
+
   // Modal
   if(state.modal==='addDoc'||state.modal==='editDoc'){
     sec.appendChild(renderModal(state.modal==='addDoc'?'Ajouter document':'Modifier',true,()=>{
